@@ -1449,3 +1449,93 @@ function renderReport(report, findings, aiResult) {
   `;
   window._lastReport = { report, findings, aiResult };
 }
+
+function escapeHtml(s) {
+  if (s === null || s === undefined) return '';
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function exportMarkdown() {
+  const { report, findings, aiResult } = window._lastReport || {};
+  if (!report) return;
+  let md = `# DryBooks Scrub Report\n\n`;
+  md += `**Customer:** ${report.customerName}\n`;
+  md += `**Claim #:** ${report.claimNumber}\n`;
+  md += `**Project #:** ${report.projectNumber}\n`;
+  md += `**Cat/Class:** ${report.category}/${report.class}  •  **Days to Dry:** ${report.daysToDry}  •  **Total Affected SF:** ${report.totalAffectedSF}\n\n`;
+  md += `## Findings\n\n`;
+  if (findings.length === 0) md += '_No hard-rule violations detected._\n\n';
+  for (const f of findings) {
+    md += `### [${f.severity.toUpperCase()}] ${f.title}  *(${f.rule})*\n`;
+    md += `${f.message}\n\n`;
+    if (f.evidence) md += '```\n' + f.evidence + '\n```\n\n';
+  }
+  if (aiResult && !aiResult.error) {
+    md += `## AI Judgment\n\n${aiResult.text}\n`;
+  }
+  const blob = new Blob([md], { type: 'text/markdown' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${(report.claimNumber || 'scrub').replace(/[^a-z0-9]/gi, '_')}_scrub.md`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+window.exportMarkdown = exportMarkdown;
+
+// ============================================================
+// FILE HANDLING
+// ============================================================
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+const statusEl = document.getElementById('status');
+
+function setStatus(msg, isError) {
+  statusEl.innerHTML = msg;
+  statusEl.classList.add('show');
+  statusEl.classList.toggle('error', !!isError);
+}
+function clearStatus() { statusEl.classList.remove('show', 'error'); }
+
+dropzone.onclick = () => fileInput.click();
+fileInput.onchange = e => handleFile(e.target.files[0]);
+dropzone.ondragover = e => { e.preventDefault(); dropzone.classList.add('dragover'); };
+dropzone.ondragleave = () => dropzone.classList.remove('dragover');
+dropzone.ondrop = e => {
+  e.preventDefault();
+  dropzone.classList.remove('dragover');
+  handleFile(e.dataTransfer.files[0]);
+};
+
+async function handleFile(file) {
+  if (!file) return;
+  if (!file.name.toLowerCase().endsWith('.pdf')) {
+    setStatus('Please upload a PDF file.', true);
+    return;
+  }
+  document.getElementById('results').innerHTML = '';
+  setStatus('<span class="spinner"></span> Extracting text from PDF...');
+  let lines;
+  try { lines = await extractText(file); }
+  catch (e) { setStatus('Failed to read PDF: ' + e.message, true); return; }
+
+  setStatus('<span class="spinner"></span> Parsing report structure...');
+  const report = parseReport(lines);
+
+  setStatus('<span class="spinner"></span> Running rules engine...');
+  const findings = runRules(report);
+
+  const settings = loadSettings();
+  if (settings.provider !== 'none') {
+    setStatus('<span class="spinner"></span> Running AI judgment layer (' + settings.provider + ')...');
+    const ai = await runAI(report, findings);
+    clearStatus();
+    renderReport(report, findings, ai);
+  } else {
+    clearStatus();
+    renderReport(report, findings, null);
+  }
+}
+</script>
+</body>
+</html>
