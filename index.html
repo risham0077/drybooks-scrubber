@@ -1,0 +1,1451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DryBooks Scrubber — IICRC S500 QC Tool</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  :root {
+    --bg: #0e1116;
+    --panel: #161b22;
+    --panel-2: #1f262f;
+    --border: #2d343d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #2f81f7;
+    --crit: #f85149;
+    --high: #ff9a3c;
+    --med: #d29922;
+    --low: #3fb950;
+    --ok: #56d364;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+  }
+  header {
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  header h1 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+  }
+  header .subtitle { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  header button {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  header button:hover { background: var(--border); }
+  main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+  .dropzone {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 60px 24px;
+    text-align: center;
+    background: var(--panel);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .dropzone:hover, .dropzone.dragover {
+    border-color: var(--accent);
+    background: var(--panel-2);
+  }
+  .dropzone h2 { margin: 0 0 8px; font-size: 20px; }
+  .dropzone p { margin: 0; color: var(--muted); font-size: 14px; }
+  .dropzone input[type=file] { display: none; }
+  .status {
+    margin-top: 16px;
+    padding: 12px 16px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 13px;
+    display: none;
+  }
+  .status.show { display: block; }
+  .status.error { border-color: var(--crit); }
+  .summary-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 24px;
+  }
+  .summary-card h2 { margin: 0 0 16px; font-size: 16px; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+  }
+  .meta {
+    background: var(--panel-2);
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+  .meta .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .meta .value { font-size: 14px; margin-top: 4px; font-weight: 500; }
+  .severity-summary { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0; }
+  .badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .badge .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .badge.critical { background: rgba(248,81,73,0.15); color: var(--crit); }
+  .badge.critical .dot { background: var(--crit); }
+  .badge.high { background: rgba(255,154,60,0.15); color: var(--high); }
+  .badge.high .dot { background: var(--high); }
+  .badge.medium { background: rgba(210,153,34,0.15); color: var(--med); }
+  .badge.medium .dot { background: var(--med); }
+  .badge.low { background: rgba(63,185,113,0.15); color: var(--low); }
+  .badge.low .dot { background: var(--low); }
+  .badge.ok { background: rgba(86,211,100,0.15); color: var(--ok); }
+  .findings { margin-top: 16px; }
+  .finding {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--med);
+    border-radius: 6px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+  }
+  .finding.critical { border-left-color: var(--crit); }
+  .finding.high { border-left-color: var(--high); }
+  .finding.medium { border-left-color: var(--med); }
+  .finding.low { border-left-color: var(--low); }
+  .finding-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    gap: 12px;
+    margin-bottom: 6px;
+  }
+  .finding-title { font-weight: 600; font-size: 14px; }
+  .finding-rule { font-size: 11px; color: var(--muted); font-family: monospace; }
+  .finding-message { font-size: 13px; color: var(--text); }
+  .finding-evidence {
+    margin-top: 8px;
+    padding: 8px 10px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 12px;
+    color: var(--muted);
+    white-space: pre-wrap;
+  }
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+  .modal-backdrop.show { display: flex; }
+  .modal {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    max-width: 520px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  .modal h2 { margin: 0 0 12px; font-size: 18px; }
+  .modal p { color: var(--muted); font-size: 13px; }
+  .modal label { display: block; margin: 16px 0 6px; font-size: 13px; font-weight: 500; }
+  .modal input, .modal select {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: inherit;
+  }
+  .modal .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+  .steps-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-top: 16px;
+  }
+  .steps-card h3 {
+    margin: 0 0 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .steps-list {
+    list-style: none;
+    counter-reset: step;
+    padding: 0;
+    margin: 0;
+  }
+  .steps-list li {
+    counter-increment: step;
+    padding-left: 32px;
+    position: relative;
+    font-size: 13px;
+    line-height: 1.5;
+    margin-bottom: 10px;
+    color: var(--text);
+  }
+  .steps-list li:last-child { margin-bottom: 0; }
+  .steps-list li::before {
+    content: counter(step);
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 22px;
+    height: 22px;
+    background: var(--accent);
+    color: white;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 22px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .steps-list code {
+    background: rgba(0,0,0,0.4);
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-family: monospace;
+    font-size: 12px;
+  }
+  .steps-list a {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .steps-list a:hover { text-decoration: underline; }
+  .steps-note {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .provider-steps { display: none; }
+  .provider-steps.active { display: block; }
+  .modal button {
+    background: var(--accent);
+    border: none;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .modal button.secondary { background: var(--panel-2); border: 1px solid var(--border); }
+  .modal a { color: var(--accent); }
+  .ai-section {
+    margin-top: 24px;
+    background: linear-gradient(135deg, rgba(47,129,247,0.1), rgba(47,129,247,0.03));
+    border: 1px solid rgba(47,129,247,0.3);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .ai-section h2 { margin: 0 0 8px; font-size: 16px; }
+  .ai-section .ai-label { font-size: 11px; color: var(--accent); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .ai-content { font-size: 13px; line-height: 1.6; white-space: pre-wrap; color: var(--text); margin-top: 12px; }
+  .actions-bar { display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end; }
+  .actions-bar button {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  .privacy {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 12px;
+    text-align: center;
+  }
+  .spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .empty-ok {
+    text-align: center;
+    padding: 24px;
+    color: var(--ok);
+    font-size: 14px;
+  }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>DryBooks Scrubber</h1>
+    <div class="subtitle">IICRC S500 QC review — flag carrier chargeback risks before they leave the office</div>
+  </div>
+  <button id="settingsBtn">Settings</button>
+</header>
+
+<main>
+  <div class="dropzone" id="dropzone">
+    <h2>Drop a DryBooks PDF here</h2>
+    <p>or click to choose a file — processed locally in your browser</p>
+    <input type="file" id="fileInput" accept="application/pdf">
+  </div>
+  <div class="status" id="status"></div>
+  <div id="results"></div>
+  <div class="privacy">PDFs never leave your browser. Only the extracted summary is sent to the AI provider you configure. Each user's API key stays in their own browser (localStorage).</div>
+</main>
+
+<div class="modal-backdrop" id="settingsModal">
+  <div class="modal">
+    <h2>AI Settings</h2>
+    <p>Pick an AI provider and paste your API key. Keys stay in your browser — never sent anywhere except directly to the provider.</p>
+
+    <label>AI Provider</label>
+    <select id="provider">
+      <option value="worker">Shared Worker (managed by your team — no key needed)</option>
+      <option value="gemini">Google Gemini Flash (your own key)</option>
+      <option value="anthropic">Anthropic Claude (your own key)</option>
+      <option value="openai">OpenAI GPT (your own key)</option>
+      <option value="none">No AI (hard rules only)</option>
+    </select>
+
+    <div id="worker-fields">
+      <label>Worker URL</label>
+      <input type="text" id="workerUrl" placeholder="https://drybooks-scrubber.yourname.workers.dev">
+      <label>Shared Password (optional — only if your admin set one)</label>
+      <input type="password" id="workerPassword" placeholder="Leave blank if no password was set">
+    </div>
+
+    <div id="key-fields">
+      <label>Your API Key</label>
+      <input type="password" id="apiKey" placeholder="Paste your API key here">
+    </div>
+
+    <!-- Shared Worker step-by-step (for reviewers using a team-managed Worker) -->
+    <div class="provider-steps active" id="steps-worker">
+      <div class="steps-card">
+        <h3>Using a Shared Worker (no key needed)</h3>
+        <ol class="steps-list">
+          <li>Your admin (the person who set this up) should have sent you a Worker URL — it looks like <code>https://drybooks-scrubber.<em>something</em>.workers.dev</code>.</li>
+          <li>Paste that URL into the <strong>Worker URL</strong> box above.</li>
+          <li>If your admin also set a shared password, paste it into the <strong>Shared Password</strong> box. Otherwise leave it blank.</li>
+          <li>Click <strong>Save</strong>. You're done — drop a PDF on the home screen to test.</li>
+        </ol>
+        <div class="steps-note">
+          <strong>If you're the admin setting this up:</strong> See <code>cloudflare-worker.js</code> and the README in the repo. Briefly: create a free Cloudflare account, paste the Worker script, set your Gemini key as an encrypted variable named <code>GEMINI_API_KEY</code>, click Deploy, copy the URL, share it with your team. ~15 minutes one-time, $0/month.
+        </div>
+      </div>
+    </div>
+
+    <!-- Gemini step-by-step -->
+    <div class="provider-steps" id="steps-gemini">
+      <div class="steps-card">
+        <h3>How to get a free Gemini API key</h3>
+        <ol class="steps-list">
+          <li>Open <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com/app/apikey</a> in a new tab.</li>
+          <li>Sign in with any Google account (the one you use for Gmail is fine).</li>
+          <li>If prompted, accept the Google AI Studio terms of service.</li>
+          <li>Click the blue <strong>Create API key</strong> button on the right.</li>
+          <li>Choose <strong>Create API key in new project</strong> if asked (or pick any existing project).</li>
+          <li>Your key will appear — it starts with <code>AIza</code> and is about 39 characters long. Click the copy icon next to it.</li>
+          <li>Come back to this tab and paste it into the <strong>Your API Key</strong> box above.</li>
+          <li>Click <strong>Save</strong>. You're done — drop a PDF on the home screen to test it.</li>
+        </ol>
+        <div class="steps-note">
+          Free tier covers 1,500 scrubs per day. No credit card required. The key only works with Gemini — keep it secret like a password.
+        </div>
+      </div>
+    </div>
+
+    <!-- Anthropic step-by-step -->
+    <div class="provider-steps" id="steps-anthropic">
+      <div class="steps-card">
+        <h3>How to get an Anthropic Claude API key</h3>
+        <ol class="steps-list">
+          <li>Open <a href="https://console.anthropic.com/" target="_blank">console.anthropic.com</a> in a new tab.</li>
+          <li>Click <strong>Sign up</strong> (or sign in if you already have an account). New accounts get $5 in free credit.</li>
+          <li>Verify your email and phone number when prompted.</li>
+          <li>Once in the console, click <strong>Settings</strong> in the left sidebar, then <strong>API keys</strong>.</li>
+          <li>Click <strong>Create Key</strong>. Give it a name like <code>DryBooks Scrubber</code>.</li>
+          <li>Copy the key shown — it starts with <code>sk-ant-</code>. You won't be able to see it again, so copy it now.</li>
+          <li>Come back to this tab and paste it into the <strong>Your API Key</strong> box above.</li>
+          <li>Click <strong>Save</strong>.</li>
+        </ol>
+        <div class="steps-note">
+          $5 free credit ≈ 50 report scrubs. After that, expect $0.05–$0.20 per report. Quality is noticeably better than Gemini for nuanced narrative review.
+        </div>
+      </div>
+    </div>
+
+    <!-- OpenAI step-by-step -->
+    <div class="provider-steps" id="steps-openai">
+      <div class="steps-card">
+        <h3>How to get an OpenAI API key</h3>
+        <ol class="steps-list">
+          <li>Open <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com/api-keys</a> in a new tab.</li>
+          <li>Sign up or sign in. Note: OpenAI requires you to add a payment method before you can create keys.</li>
+          <li>Go to <strong>Billing</strong> in the left sidebar and add a payment method. You can set a hard spend cap (recommended: $5/month to start).</li>
+          <li>Back on the API keys page, click <strong>Create new secret key</strong>.</li>
+          <li>Give it a name like <code>DryBooks Scrubber</code> and click <strong>Create</strong>.</li>
+          <li>Copy the key shown — it starts with <code>sk-</code>. You can't see it again later.</li>
+          <li>Come back to this tab and paste it into the <strong>Your API Key</strong> box above.</li>
+          <li>Click <strong>Save</strong>.</li>
+        </ol>
+        <div class="steps-note">
+          Costs ~$0.05 per report scrub on GPT-4o-mini. Set a monthly spend cap in OpenAI's billing settings to avoid surprises.
+        </div>
+      </div>
+    </div>
+
+    <!-- No AI -->
+    <div class="provider-steps" id="steps-none">
+      <div class="steps-card">
+        <h3>Running without AI</h3>
+        <ol class="steps-list">
+          <li>You don't need to enter a key for this mode.</li>
+          <li>Click <strong>Save</strong> to confirm.</li>
+          <li>The scrubber will still run all hard rules — timestamps, dehu sizing, missed readings, fabrication signals, etc.</li>
+          <li>You lose the AI judgment layer: Class/Category recommendations, nuanced narrative review, and corrective-action suggestions.</li>
+        </ol>
+        <div class="steps-note">
+          Use this if you're testing the tool, working offline, or restricted from cloud AI services. You can switch back to a provider anytime.
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="secondary" id="settingsCancel">Cancel</button>
+      <button id="settingsSave">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+// ============================================================
+// SETTINGS
+// ============================================================
+const SETTINGS_KEY = 'drybooks_scrubber_settings_v1';
+function loadSettings() {
+  try { return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || { provider: 'worker', apiKey: '', workerUrl: '', workerPassword: '' }; }
+  catch { return { provider: 'worker', apiKey: '', workerUrl: '', workerPassword: '' }; }
+}
+function saveSettings(s) { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); }
+
+const settingsModal = document.getElementById('settingsModal');
+
+function showProviderSteps(provider) {
+  document.querySelectorAll('.provider-steps').forEach(el => el.classList.remove('active'));
+  const target = document.getElementById('steps-' + provider);
+  if (target) target.classList.add('active');
+
+  // Toggle which form fields are visible
+  const workerFields = document.getElementById('worker-fields');
+  const keyFields = document.getElementById('key-fields');
+  if (provider === 'worker') {
+    workerFields.style.display = 'block';
+    keyFields.style.display = 'none';
+  } else if (provider === 'none') {
+    workerFields.style.display = 'none';
+    keyFields.style.display = 'none';
+  } else {
+    workerFields.style.display = 'none';
+    keyFields.style.display = 'block';
+  }
+
+  // Update placeholder hint for the API key field
+  const keyInput = document.getElementById('apiKey');
+  const hints = {
+    gemini: 'Paste your Gemini API key here (starts with AIza...)',
+    anthropic: 'Paste your Anthropic key here (starts with sk-ant-...)',
+    openai: 'Paste your OpenAI key here (starts with sk-...)'
+  };
+  keyInput.placeholder = hints[provider] || 'Paste your API key here';
+}
+
+document.getElementById('settingsBtn').onclick = () => {
+  const s = loadSettings();
+  document.getElementById('provider').value = s.provider;
+  document.getElementById('apiKey').value = s.apiKey || '';
+  document.getElementById('workerUrl').value = s.workerUrl || '';
+  document.getElementById('workerPassword').value = s.workerPassword || '';
+  showProviderSteps(s.provider);
+  settingsModal.classList.add('show');
+};
+
+document.getElementById('provider').addEventListener('change', (e) => {
+  showProviderSteps(e.target.value);
+});
+
+document.getElementById('settingsCancel').onclick = () => settingsModal.classList.remove('show');
+document.getElementById('settingsSave').onclick = () => {
+  saveSettings({
+    provider: document.getElementById('provider').value,
+    apiKey: document.getElementById('apiKey').value,
+    workerUrl: document.getElementById('workerUrl').value.trim().replace(/\/$/, ''),
+    workerPassword: document.getElementById('workerPassword').value
+  });
+  settingsModal.classList.remove('show');
+};
+
+// ============================================================
+// PDF TEXT EXTRACTION (layout-preserving)
+// ============================================================
+async function extractText(file) {
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+  const allLines = [];
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    const items = content.items.map(it => ({
+      str: it.str,
+      x: it.transform[4],
+      y: it.transform[5]
+    }));
+    // Sort by y descending, then x ascending
+    items.sort((a, b) => b.y - a.y || a.x - b.x);
+    let currentY = null;
+    let currentLine = [];
+    for (const it of items) {
+      if (currentY === null || Math.abs(it.y - currentY) < 3) {
+        currentLine.push(it);
+        currentY = currentY === null ? it.y : currentY;
+      } else {
+        currentLine.sort((a, b) => a.x - b.x);
+        allLines.push(currentLine.map(c => c.str).join(' ').trim());
+        currentLine = [it];
+        currentY = it.y;
+      }
+    }
+    if (currentLine.length) {
+      currentLine.sort((a, b) => a.x - b.x);
+      allLines.push(currentLine.map(c => c.str).join(' ').trim());
+    }
+    allLines.push(''); // page break
+  }
+  return allLines;
+}
+
+// ============================================================
+// FIELD PARSING
+// ============================================================
+function parseTimestamp(str) {
+  if (!str) return null;
+  const m = str.match(/(\d{1,2}\/\d{1,2}\/\d{2,4})\s+(\d{1,2}:\d{2}\s*(?:AM|PM))/i);
+  if (!m) return null;
+  const dt = new Date(m[1] + ' ' + m[2]);
+  return isNaN(dt) ? null : dt;
+}
+
+function findField(lines, label) {
+  // Stop the captured value at 2+ consecutive spaces (which separate columns)
+  const re = new RegExp('^\\s*' + label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ':?\\s+(.+?)(?:\\s{2,}|$)', 'i');
+  for (const ln of lines) {
+    const m = ln.match(re);
+    if (m) return m[1].trim();
+  }
+  return null;
+}
+
+function findFieldsOnLine(lines, leftLabel, rightLabel) {
+  const re = new RegExp(leftLabel + ':?\\s*(.*?)\\s{2,}' + rightLabel + ':?\\s*(.+?)(?:\\s{2,}|$)', 'i');
+  for (const ln of lines) {
+    const m = ln.match(re);
+    if (m) return { left: m[1].trim(), right: m[2].trim() };
+  }
+  return { left: null, right: null };
+}
+
+// Days to Achieve Dry Standard appears in 2 layouts:
+//  (a) value on next line under the label (multi-line)
+//  (b) value inline right after the label (single-line)
+function findDaysToDry(lines) {
+  for (let i = 0; i < lines.length; i++) {
+    if (/Days to Achieve Dry/i.test(lines[i])) {
+      // (b) inline value — only match if the number comes BEFORE any other label
+      const before = lines[i].split(/Total Affected SF/i)[0];
+      const inline = before.match(/Days to Achieve Dry\s+([\d.]+)(?:\s|$)/i);
+      if (inline) return parseFloat(inline[1]);
+      // (a) next-line value
+      for (let j = i + 1; j < Math.min(i + 4, lines.length); j++) {
+        const m = lines[j].match(/^\s*([\d.]+)\s*$/);
+        if (m) return parseFloat(m[1]);
+      }
+    }
+  }
+  return null;
+}
+
+// Total Affected SF appears mid-line, so search anywhere on the line.
+function findTotalAffectedSF(lines) {
+  for (const ln of lines) {
+    const m = ln.match(/Total Affected SF:?\s+([\d.,]+)/i);
+    if (m) return parseFloat(m[1].replace(/,/g, ''));
+  }
+  return null;
+}
+
+function parseReport(lines) {
+  const r = {};
+  // Customer / job info
+  r.customerName = findField(lines, 'Customer Name');
+  r.claimNumber = findField(lines, 'Claim / PO Number');
+  r.projectNumber = findField(lines, 'SERVPRO Project #');
+  // Timestamps — these come in pairs on the same line
+  const ts1 = findFieldsOnLine(lines, 'Loss Received', 'Customer Called');
+  r.lossReceived = parseTimestamp(ts1.left);
+  r.customerCalled = parseTimestamp(ts1.right);
+  const ts2 = findFieldsOnLine(lines, 'Date of Loss', 'Site Inspected');
+  r.dateOfLoss = parseTimestamp(ts2.left);
+  r.siteInspected = parseTimestamp(ts2.right);
+  r.dryingComplete = parseTimestamp(findField(lines, 'Drying Complete'));
+  // Additional loss info
+  const cat = findFieldsOnLine(lines, 'Category of Water', 'Class of Water');
+  r.category = parseInt(cat.left) || null;
+  r.class = parseInt(cat.right) || null;
+  r.daysToDry = findDaysToDry(lines);
+  r.totalAffectedSF = findTotalAffectedSF(lines);
+  r.dryingZones = parseInt(findField(lines, 'Drying Zones')) || null;
+  // Loss info
+  r.typeOfLoss = findField(lines, 'Type of Loss');
+  r.causeOfLoss = findField(lines, 'Cause of Loss');
+  r.structureType = findField(lines, 'Structure Type');
+
+  // Zones — parse Zone Composition and Validation
+  r.zones = parseZones(lines);
+  // Atmospherics + Dehu (tracked together, split below)
+  const atm = parseAtmospherics(lines);
+  r.atmospherics = atm.readings;
+  r.missedReadingDays = atm.missedDays;
+  // Split missed days by mode (atmospheric vs dehu) and by zone
+  r.missedAtmosphericDays = atm.missedDays.filter(m => m.mode === 'atmospheric');
+  r.missedDehuDays = atm.missedDays.filter(m => m.mode === 'dehu');
+  // Material readings — returns readings + estimated coverage gap + material types
+  const mat = parseMaterialReadings(lines);
+  r.materialReadings = mat.readings;
+  r.materialTypes = mat.materialTypes;
+  r.materialDateColumns = mat.dateColumns;
+  r.materialTotalDateColumns = mat.totalDateColumns;
+  r.materialBestRowReadings = mat.bestRowReadingCount;
+  r.materialEstimatedMissedDays = mat.estimatedMissedDays;
+  r.class4Candidates = detectClass4Materials(mat.materialTypes);
+  // Narrative
+  r.narrative = parseNarrative(lines);
+  // Equipment timeline
+  r.equipmentRange = parseEquipmentRange(lines);
+
+  return r;
+}
+
+function parseZones(lines) {
+  const zones = [];
+  let current = null;
+  for (let i = 0; i < lines.length; i++) {
+    const ln = lines[i];
+    const zm = ln.match(/^Zone\s+(\d+)\s*$/);
+    if (zm) {
+      if (current) zones.push(current);
+      current = { number: parseInt(zm[1]), rooms: [] };
+      continue;
+    }
+    if (!current) continue;
+    // Stop if we hit a new top-level section
+    if (ln.match(/^Zone Equipment Usage|^Drawings|^Monitoring/)) {
+      if (current) { zones.push(current); current = null; }
+      continue;
+    }
+    const dehuMin = ln.match(/Dehu Min Capacity Required:\s*(\d+)\s*PPD/i);
+    if (dehuMin) current.dehuMinPPD = parseInt(dehuMin[1]);
+    const dehuActual = ln.match(/Dehu Actual Capacity Placed:\s*(\d+)\s*PPD/i);
+    if (dehuActual) current.dehuActualPPD = parseInt(dehuActual[1]);
+    const dehuPlaced = ln.match(/Dehumidifiers Placed:\s*(\d+)/i);
+    if (dehuPlaced) current.dehumidifiersPlaced = parseInt(dehuPlaced[1]);
+    const amReq = ln.match(/Air Movers Required:\s*([\d\s\-]+)/i);
+    if (amReq) current.airMoversRequired = amReq[1].trim();
+    const amPlaced = ln.match(/Air Movers Placed:\s*(\d+)/i);
+    if (amPlaced) current.airMoversPlaced = parseInt(amPlaced[1]);
+    // Room affected % lines: e.g. "Main Level Garage  30 % 0% 5% 100 %"
+    const roomPct = ln.match(/^([A-Z][A-Za-z0-9 \/\-]+?)\s+(\d+)\s*%\s+(\d+)\s*%\s+(\d+)\s*%\s+(\d+)\s*%/);
+    if (roomPct && !ln.includes('Total')) {
+      current.rooms.push({
+        name: roomPct[1].trim(),
+        totalPct: parseInt(roomPct[2]),
+        floorPct: parseInt(roomPct[3]),
+        wallPct: parseInt(roomPct[4]),
+        ceilingPct: parseInt(roomPct[5])
+      });
+    }
+  }
+  if (current) zones.push(current);
+  return zones;
+}
+
+function parseAtmospherics(lines) {
+  // PDF layout: timestamp on one line, readings on the next, "Tech:" on the third.
+  // If the line after a timestamp is "Tech:" (no readings), that's a MISSED reading day.
+  const readings = [];
+  const missedDays = [];
+  let inSection = false;
+  let currentZone = null;
+  let mode = null; // 'atmospheric' or 'dehu'
+  const isTimestampLine = ln => /^\s*\d{1,2}\/\d{1,2}\/\d{2,4}\s+\d{1,2}:\d{2}\s*(?:AM|PM)\s*$/i.test(ln);
+  for (let i = 0; i < lines.length; i++) {
+    const ln = lines[i];
+    if (ln.match(/Atmospheric\s*&\s*Dehumidifier Readings/i)) { inSection = true; mode = 'atmospheric'; continue; }
+    if (!inSection) continue;
+    if (ln.match(/Moisture Content Readings/i)) { inSection = false; continue; }
+    const zm = ln.match(/^\s*Zone\s+(\d+)\s*$/);
+    if (zm) { currentZone = parseInt(zm[1]); mode = 'atmospheric'; continue; }
+    // Mode detection — reliable single-line cues from column headers:
+    //   "GDEP" appears ONLY in the dehu section
+    //   "Outside ... Unaffected" or "Atmospheric Readings" identify atmospheric
+    if (/\bGDEP\b/i.test(ln)) { mode = 'dehu'; continue; }
+    if (/\bOutside\b.*\bUnaffected\b/i.test(ln) || /Atmospheric\s*Readings/i.test(ln)) { mode = 'atmospheric'; continue; }
+    if (!isTimestampLine(ln)) continue;
+    const ts = parseTimestamp(ln.trim());
+    // Look at next 1-3 lines for the readings row
+    let readingLine = null;
+    for (let j = i + 1; j < Math.min(i + 4, lines.length); j++) {
+      const next = lines[j].trim();
+      if (next === '' || /^Tech:/i.test(next)) continue;
+      // Stop if we hit another timestamp
+      if (isTimestampLine(next)) break;
+      readingLine = next; break;
+    }
+    if (!readingLine) {
+      missedDays.push({ zone: currentZone, timestamp: ts, mode });
+      continue;
+    }
+    const nums = (readingLine.match(/-?[\d.]+/g) || []).map(Number);
+    if (mode === 'dehu' && nums.length >= 5) {
+      readings.push({
+        zone: currentZone, timestamp: ts,
+        dehu: { temp: nums[0], rh: nums[1], gpp: nums[2], gdep: nums[3], hrs: nums[4] }
+      });
+    } else if (mode === 'atmospheric' && nums.length >= 9) {
+      // Last 3 nums = affected zone (Zone N column); first 3 = Outside; next 3 = Unaffected
+      readings.push({
+        zone: currentZone, timestamp: ts,
+        outside:    { temp: nums[0], rh: nums[1], gpp: nums[2] },
+        unaffected: { temp: nums[3], rh: nums[4], gpp: nums[5] },
+        affected:   { temp: nums[nums.length-3], rh: nums[nums.length-2], gpp: nums[nums.length-1] }
+      });
+    } else if (mode === 'atmospheric' && nums.length >= 6) {
+      // No HVAC column case
+      readings.push({
+        zone: currentZone, timestamp: ts,
+        outside:    { temp: nums[0], rh: nums[1], gpp: nums[2] },
+        unaffected: { temp: nums[3], rh: nums[4], gpp: nums[5] },
+        affected:   { temp: nums[nums.length-3], rh: nums[nums.length-2], gpp: nums[nums.length-1] }
+      });
+    }
+  }
+  return { readings, missedDays };
+}
+
+function parseMaterialReadings(lines) {
+  // The Moisture Content Readings section is a matrix: rows = materials, columns = dates.
+  // Approach:
+  //  - Skip footer lines (they contain "Drying Report" and the report-generation date).
+  //  - Only treat a line as a date-column header if it has 2+ MM/DD tokens AND no material name.
+  //  - For each material row, capture values; the per-row "coverage" is values.length / total date columns.
+  const readings = [];
+  const materialTypes = new Set();
+  const dateColumns = new Set();
+  let inSection = false;
+  let maxValuesAnyRow = 0;
+  for (let i = 0; i < lines.length; i++) {
+    const ln = lines[i];
+    if (/^Moisture Content Readings/i.test(ln)) { inSection = true; continue; }
+    if (!inSection) continue;
+    if (/^Drawings|^Zone Composition|^Page\s+\d+/i.test(ln)) { inSection = false; continue; }
+    if (/Drying Report/i.test(ln)) continue; // footer date noise
+    // Identify date-column header lines: 2+ MM/DD tokens, no material/category words.
+    const datesOnLine = ln.match(/\b\d{1,2}\/\d{1,2}\b/g) || [];
+    const looksLikeMaterialRow = /\b(Pts|%)\b/.test(ln);
+    if (datesOnLine.length >= 2 && !looksLikeMaterialRow) {
+      datesOnLine.forEach(d => dateColumns.add(d));
+    }
+    // Material reading row: "Material - SubName  Pts  Goal  val1 val2 ..."
+    const rowMatch = ln.match(/^([A-Za-z][\w \/\-]+?)\s+(Pts|%)\s+(\d+)\s+(.*)$/);
+    if (rowMatch) {
+      const materialName = rowMatch[1].trim();
+      materialTypes.add(materialName.toLowerCase());
+      const nums = (rowMatch[4].match(/[\d.]+/g) || []).map(Number);
+      if (nums.length >= 1) {
+        readings.push({ location: materialName, unit: rowMatch[2], goal: parseInt(rowMatch[3]), values: nums, raw: ln });
+        if (nums.length > maxValuesAnyRow) maxValuesAnyRow = nums.length;
+      }
+    }
+  }
+  // Honest gap estimate: number of date columns minus the maximum readings any single row carried.
+  // This is the floor on missed days (the best-monitored row tells us how many days were actually checked).
+  const totalColumns = dateColumns.size;
+  const estimatedMissedDays = Math.max(0, totalColumns - maxValuesAnyRow);
+  return {
+    readings,
+    materialTypes: [...materialTypes],
+    dateColumns: [...dateColumns],
+    totalDateColumns: totalColumns,
+    bestRowReadingCount: maxValuesAnyRow,
+    estimatedMissedDays
+  };
+}
+
+// Detect Class 4 candidate materials (low evaporation per S500) from material readings.
+function detectClass4Materials(materialTypes) {
+  const class4Patterns = [
+    /plaster/i, /\bwood\b|hardwood|engineered|subfloor|framing|stud/i,
+    /concrete|masonry|cmu/i, /multi.?layer/i, /built.?up/i
+  ];
+  return materialTypes.filter(m => class4Patterns.some(re => re.test(m)));
+}
+
+function parseNarrative(lines) {
+  const entries = [];
+  let inSection = false;
+  let currentEntry = null;
+  for (const ln of lines) {
+    if (ln.match(/^Daily Narrative/i)) { inSection = true; continue; }
+    if (!inSection) continue;
+    if (ln.match(/^Zone Composition|^Equipment Usage|^Diary Notes$|^Drawings/i) && !currentEntry) { inSection = false; continue; }
+    const ts = ln.match(/^(\d{1,2}\/\d{1,2}\/\d{2,4}\s+\d{1,2}:\d{2}\s*(?:AM|PM)(?:\s+\w+)?)\s+(.*)$/i);
+    if (ts) {
+      if (currentEntry) entries.push(currentEntry);
+      currentEntry = { timestamp: parseTimestamp(ts[1]), text: ts[2] };
+    } else if (currentEntry) {
+      currentEntry.text += ' ' + ln;
+    }
+  }
+  if (currentEntry) entries.push(currentEntry);
+  return entries;
+}
+
+function parseEquipmentRange(lines) {
+  let firstPlaced = null, lastRemoved = null;
+  for (const ln of lines) {
+    const m = ln.match(/(\d{1,2}\/\d{1,2}\/\d{2,4}\s+\d{1,2}:\d{2}\s*(?:AM|PM))\s+(\d{1,2}\/\d{1,2}\/\d{2,4}\s+\d{1,2}:\d{2}\s*(?:AM|PM))/i);
+    if (m) {
+      const placed = parseTimestamp(m[1]);
+      const removed = parseTimestamp(m[2]);
+      if (placed && (!firstPlaced || placed < firstPlaced)) firstPlaced = placed;
+      if (removed && (!lastRemoved || removed > lastRemoved)) lastRemoved = removed;
+    }
+  }
+  return { firstPlaced, lastRemoved };
+}
+
+// ============================================================
+// RULES ENGINE
+// ============================================================
+const SEV = { CRITICAL: 'critical', HIGH: 'high', MEDIUM: 'medium', LOW: 'low' };
+
+function hoursBetween(a, b) {
+  if (!a || !b) return null;
+  return (b - a) / (1000 * 60 * 60);
+}
+function fmt(d) { return d ? d.toLocaleString() : 'missing'; }
+
+function runRules(r) {
+  const f = [];
+  const add = (severity, rule, title, message, evidence) =>
+    f.push({ severity, rule, title, message, evidence });
+
+  // R-001: Customer contact within 1 hour
+  if (r.lossReceived && r.customerCalled) {
+    const h = hoursBetween(r.lossReceived, r.customerCalled);
+    if (h < 0) {
+      add(SEV.CRITICAL, 'R-001b', 'Customer Called BEFORE Loss Received',
+        'Customer Called timestamp is earlier than Loss Received. This is a data integrity issue carriers will challenge.',
+        `Loss Received: ${fmt(r.lossReceived)}\nCustomer Called: ${fmt(r.customerCalled)}`);
+    } else if (h > 1) {
+      add(SEV.HIGH, 'R-001', 'Customer contact exceeded 1 hour SLA',
+        `Customer was not called within 1 hour of loss received. Actual: ${h.toFixed(1)} hours.`,
+        `Loss Received: ${fmt(r.lossReceived)}\nCustomer Called: ${fmt(r.customerCalled)}`);
+    }
+  } else {
+    add(SEV.MEDIUM, 'R-001m', 'Missing customer contact timestamps',
+      'Loss Received or Customer Called timestamp is missing — cannot verify 1-hour contact SLA.',
+      `Loss Received: ${fmt(r.lossReceived)}\nCustomer Called: ${fmt(r.customerCalled)}`);
+  }
+
+  // R-002: Site inspected within 4 hours
+  if (r.lossReceived && r.siteInspected) {
+    const h = hoursBetween(r.lossReceived, r.siteInspected);
+    if (h > 4) {
+      add(SEV.HIGH, 'R-002', 'Site inspection exceeded 4-hour SLA',
+        `Site was not inspected within 4 hours of loss received. Actual: ${h.toFixed(1)} hours.`,
+        `Loss Received: ${fmt(r.lossReceived)}\nSite Inspected: ${fmt(r.siteInspected)}`);
+    }
+  }
+
+  // R-003: Days to achieve dry standard (5-7 days)
+  if (r.daysToDry !== null) {
+    if (r.daysToDry > 7) {
+      const auths = (r.narrative || []).filter(n => /drying days|extended|exceed|approved.*extension|approval.*dry/i.test(n.text)).length;
+      const sev = auths > 0 ? SEV.HIGH : SEV.CRITICAL;
+      add(sev, 'R-003', `Extended drying: ${r.daysToDry.toFixed(2)} days (>7)`,
+        auths > 0
+          ? `Drying took ${r.daysToDry.toFixed(2)} days. Narrative shows ${auths} entries referencing extended drying — verify adjuster authorization is documented and dated.`
+          : `Drying took ${r.daysToDry.toFixed(2)} days with NO narrative entries documenting adjuster authorization for extension. CARRIER WILL CHARGEBACK.`,
+        `Days to Achieve Dry Standard: ${r.daysToDry}\nWindow: 5-7 days`);
+    } else if (r.daysToDry < 5) {
+      add(SEV.LOW, 'R-003b', `Drying completed in under 5 days (${r.daysToDry.toFixed(2)})`,
+        'Drying completed faster than the typical 5-day floor. Verify final moisture readings confirmed dry standard achievement.',
+        `Days to Achieve Dry Standard: ${r.daysToDry}`);
+    }
+  }
+
+  // R-004: Loss Received vs Date of Loss
+  if (r.dateOfLoss && r.lossReceived) {
+    const h = hoursBetween(r.dateOfLoss, r.lossReceived);
+    if (h < 0) {
+      add(SEV.CRITICAL, 'R-004', 'Loss Received is BEFORE Date of Loss',
+        'Timeline impossible: you received the loss report before the loss occurred.',
+        `Date of Loss: ${fmt(r.dateOfLoss)}\nLoss Received: ${fmt(r.lossReceived)}`);
+    } else if (h > 48) {
+      add(SEV.MEDIUM, 'R-004b', `Loss reported ${(h/24).toFixed(1)} days after occurrence`,
+        'Loss reported more than 48 hours after Date of Loss. Document carrier/customer reason for late notification to protect the file.',
+        `Date of Loss: ${fmt(r.dateOfLoss)}\nLoss Received: ${fmt(r.lossReceived)}`);
+    }
+  }
+
+  // R-005: Equipment timeline consistency
+  if (r.equipmentRange.firstPlaced && r.siteInspected) {
+    const h = hoursBetween(r.siteInspected, r.equipmentRange.firstPlaced);
+    if (h < -1) {
+      add(SEV.CRITICAL, 'R-005', 'Equipment placed BEFORE site was inspected',
+        'Equipment placement timestamp predates site inspection — physically impossible unless data was entered out of order. Carrier will dismiss.',
+        `Site Inspected: ${fmt(r.siteInspected)}\nFirst equipment placed: ${fmt(r.equipmentRange.firstPlaced)}`);
+    }
+  }
+  if (r.equipmentRange.firstPlaced && r.lossReceived) {
+    const h = hoursBetween(r.lossReceived, r.equipmentRange.firstPlaced);
+    if (h < -1) {
+      add(SEV.CRITICAL, 'R-005b', 'Equipment placed BEFORE loss was received',
+        'Equipment placement timestamp predates loss received — documentation contradicts itself. Backdating or forward-dating likely.',
+        `Loss Received: ${fmt(r.lossReceived)}\nFirst equipment placed: ${fmt(r.equipmentRange.firstPlaced)}`);
+    }
+  }
+
+  // R-006: Dehumidifier sizing per zone
+  for (const z of (r.zones || [])) {
+    if (z.dehuMinPPD && z.dehuActualPPD) {
+      if (z.dehuActualPPD < z.dehuMinPPD) {
+        add(SEV.HIGH, `R-006-Z${z.number}`, `Zone ${z.number} dehumidification UNDERSIZED`,
+          `Dehu Actual Capacity Placed (${z.dehuActualPPD} PPD) is less than Min Required (${z.dehuMinPPD} PPD). This causes extended drying and carriers will dispute equipment-day charges.`,
+          `Zone ${z.number}\nMin Required: ${z.dehuMinPPD} PPD\nActual Placed: ${z.dehuActualPPD} PPD\nShortfall: ${z.dehuMinPPD - z.dehuActualPPD} PPD`);
+      }
+    }
+  }
+
+  // R-007: Air movers within required range
+  for (const z of (r.zones || [])) {
+    if (z.airMoversRequired && z.airMoversPlaced !== undefined) {
+      const rangeNums = (z.airMoversRequired.match(/\d+/g) || []).map(Number);
+      const minReq = Math.min(...rangeNums);
+      const maxReq = Math.max(...rangeNums);
+      if (z.airMoversPlaced < minReq) {
+        add(SEV.HIGH, `R-007-Z${z.number}`, `Zone ${z.number} air mover count BELOW required range`,
+          `${z.airMoversPlaced} placed vs ${z.airMoversRequired} required. Underwriting will dispute.`,
+          `Zone ${z.number}\nRequired: ${z.airMoversRequired}\nPlaced: ${z.airMoversPlaced}`);
+      } else if (z.airMoversPlaced > maxReq) {
+        add(SEV.MEDIUM, `R-007b-Z${z.number}`, `Zone ${z.number} air movers EXCEED required range`,
+          `${z.airMoversPlaced} placed vs ${z.airMoversRequired} required. May trigger equipment-placement-exceeded notification and chargeback. Confirm authorization in narrative.`,
+          `Zone ${z.number}\nRequired: ${z.airMoversRequired}\nPlaced: ${z.airMoversPlaced}`);
+      }
+    }
+  }
+
+  // R-008: GDep < 6 in affected zone
+  const dehuReadings = r.atmospherics.filter(a => a.dehu);
+  const lowGdep = dehuReadings.filter(a => a.dehu.gdep < 6);
+  if (lowGdep.length >= 2) {
+    add(SEV.HIGH, 'R-008', `Low GDep (<6) on ${lowGdep.length} reading(s)`,
+      'Grains depression below 6 indicates insufficient drying pressure differential — equipment may not be working effectively or readings are suspect.',
+      lowGdep.slice(0, 5).map(a => `Zone ${a.zone} @ ${fmt(a.timestamp)}: GDep ${a.dehu.gdep}`).join('\n'));
+  }
+
+  // R-009: GPP <= 32 in affected zone early in drying
+  if (r.siteInspected) {
+    const earlyAffected = r.atmospherics.filter(a =>
+      a.affected && a.timestamp && hoursBetween(r.siteInspected, a.timestamp) < 48
+    );
+    const lowGpp = earlyAffected.filter(a => a.affected.gpp <= 32);
+    if (lowGpp.length > 0) {
+      add(SEV.MEDIUM, 'R-009', `Suspiciously low GPP in affected zone on Day 1-2`,
+        'GPP ≤ 32 in affected area during first 48 hours of an active water loss is uncommon and may indicate fabricated or misrecorded readings.',
+        lowGpp.map(a => `Zone ${a.zone} @ ${fmt(a.timestamp)}: GPP ${a.affected.gpp}`).join('\n'));
+    }
+  }
+
+  // R-010: Outside readings static (fabrication signature)
+  const outsideRows = r.atmospherics.filter(a => a.outside);
+  const outsideKeys = outsideRows.map(a => `${a.outside.temp}|${a.outside.rh}|${a.outside.gpp}`);
+  const counts = {};
+  outsideKeys.forEach(k => counts[k] = (counts[k]||0)+1);
+  const repeated = Object.entries(counts).filter(([k,v]) => v >= 3);
+  if (repeated.length > 0) {
+    add(SEV.HIGH, 'R-010', 'Identical OUTSIDE atmospheric readings across multiple days',
+      'Outside conditions change daily — identical Temp/RH/GPP across 3+ days strongly suggests fabricated or copy-pasted readings. Major fraud signal.',
+      repeated.map(([k,v]) => `Reading "${k}" appears ${v}× — outside conditions cannot be that static`).join('\n'));
+  }
+
+  // R-011: Material reading sequence/identical detection
+  for (const m of (r.materialReadings || [])) {
+    const v = m.values;
+    if (v.length < 3) continue;
+    // Identical consecutive
+    let maxRun = 1, run = 1;
+    for (let i = 1; i < v.length; i++) {
+      if (v[i] === v[i-1]) run++; else { maxRun = Math.max(maxRun, run); run = 1; }
+    }
+    maxRun = Math.max(maxRun, run);
+    if (maxRun >= 4) {
+      add(SEV.MEDIUM, 'R-011a', `Static material readings: ${m.location}`,
+        `Material reading shows ${maxRun} consecutive identical values. Readings should change as material dries — flat lines look fabricated.`,
+        `Location: ${m.location}\nValues: ${v.join(', ')}`);
+    }
+    // Arithmetic sequence detection
+    if (v.length >= 4) {
+      const diffs = [];
+      for (let i = 1; i < v.length; i++) diffs.push(v[i] - v[i-1]);
+      const uniqDiffs = [...new Set(diffs.map(d => d.toFixed(1)))];
+      if (uniqDiffs.length === 1 && Math.abs(parseFloat(uniqDiffs[0])) > 0) {
+        add(SEV.HIGH, 'R-011b', `Perfect arithmetic sequence: ${m.location}`,
+          `Readings change by exactly ${uniqDiffs[0]} each step — real drying is never that linear. Strong fabrication signal.`,
+          `Location: ${m.location}\nValues: ${v.join(', ')}\nConstant delta: ${uniqDiffs[0]}`);
+      }
+    }
+  }
+
+  // R-012: Missing daily readings during active drying window
+  if (r.siteInspected && r.dryingComplete && r.atmospherics.length > 0) {
+    const days = Math.ceil(hoursBetween(r.siteInspected, r.dryingComplete) / 24);
+    const uniqueDays = new Set(r.atmospherics
+      .filter(a => a.timestamp)
+      .map(a => a.timestamp.toDateString()));
+    const expected = Math.max(days, 1);
+    if (uniqueDays.size < expected - 1) {
+      add(SEV.MEDIUM, 'R-012', `Missing daily atmospheric readings`,
+        `Drying spanned ~${expected} days but only ${uniqueDays.size} days have recorded readings. Carriers expect daily monitoring documentation.`,
+        `Expected days: ${expected}\nDays with readings: ${uniqueDays.size}`);
+    }
+  }
+
+  // R-012b: Missed ATMOSPHERIC reading days (per zone)
+  if (r.missedAtmosphericDays && r.missedAtmosphericDays.length >= 2) {
+    const byZone = {};
+    r.missedAtmosphericDays.forEach(m => { (byZone[m.zone] = byZone[m.zone] || []).push(m.timestamp); });
+    const zoneBreakdown = Object.entries(byZone)
+      .map(([z, days]) => `Zone ${z}: ${days.length} missed`).join(' | ');
+    const dateList = r.missedAtmosphericDays.slice(0, 10)
+      .map(m => `Z${m.zone}: ${fmt(m.timestamp)}`).join('\n');
+    add(SEV.HIGH, 'R-012a', `${r.missedAtmosphericDays.length} atmospheric reading days missing (${zoneBreakdown})`,
+      'These dates appear in the atmospheric section but no Temp/RH/GPP values were logged. Carriers treat undocumented days as not-monitored — invoice reduction risk.',
+      dateList);
+  }
+  // R-012c: Missed DEHU reading days (per zone)
+  if (r.missedDehuDays && r.missedDehuDays.length >= 2) {
+    const byZone = {};
+    r.missedDehuDays.forEach(m => { (byZone[m.zone] = byZone[m.zone] || []).push(m.timestamp); });
+    const zoneBreakdown = Object.entries(byZone)
+      .map(([z, days]) => `Zone ${z}: ${days.length} missed`).join(' | ');
+    const dateList = r.missedDehuDays.slice(0, 10)
+      .map(m => `Z${m.zone}: ${fmt(m.timestamp)}`).join('\n');
+    add(SEV.HIGH, 'R-012c', `${r.missedDehuDays.length} dehumidifier reading days missing (${zoneBreakdown})`,
+      'Dehu Temp/RH/GPP/GDep/Hrs not recorded on these dates. Without dehu readings you cannot prove the equipment was running effectively — carriers will dispute equipment days.',
+      dateList);
+  }
+  // R-012d: Material reading coverage gap (estimated)
+  if (r.materialEstimatedMissedDays && r.materialEstimatedMissedDays >= 2) {
+    add(SEV.HIGH, 'R-012d', `~${r.materialEstimatedMissedDays} days with no material moisture readings (estimated)`,
+      `The moisture content table has ${r.materialTotalDateColumns} date columns but the best-monitored material was checked on only ${r.materialBestRowReadings} of those days. Without daily material readings you cannot prove progress toward dry standard.`,
+      `Total date columns: ${r.materialTotalDateColumns}\nBest row reading count: ${r.materialBestRowReadings}\nEstimated gap: ${r.materialEstimatedMissedDays} days`);
+  }
+
+  // R-013: Narrative gap during active drying
+  if ((r.narrative || []).length >= 2) {
+    const sorted = r.narrative.filter(n => n.timestamp).sort((a,b) => a.timestamp - b.timestamp);
+    for (let i = 1; i < sorted.length; i++) {
+      const gap = hoursBetween(sorted[i-1].timestamp, sorted[i].timestamp);
+      if (gap > 48) {
+        add(SEV.MEDIUM, 'R-013', `Communication gap: ${gap.toFixed(0)}h with no narrative entry`,
+          `No documented communication for ${(gap/24).toFixed(1)} days during active drying. Reviewers flag silent periods as suspicious.`,
+          `From: ${fmt(sorted[i-1].timestamp)}\nTo: ${fmt(sorted[i].timestamp)}`);
+        break;
+      }
+    }
+  }
+
+  // R-014: Adjuster contact documented
+  const adjusterMentions = (r.narrative || []).filter(n => /adjuster/i.test(n.text)).length;
+  if (adjusterMentions === 0 && r.daysToDry > 3) {
+    add(SEV.HIGH, 'R-014', 'No adjuster contact documented in Daily Narrative',
+      'No mention of adjuster communication in the narrative. Carriers require documented adjuster coordination for any meaningful loss.',
+      `Adjuster mentions in narrative: 0`);
+  }
+
+  // R-015: Category vs narrative keyword check
+  const blackTerms = /sewage|toilet|raw waste|fecal|black water|septic/i;
+  const grayTerms = /dishwasher|washing machine|appliance overflow|aquarium|gray water|shower drain/i;
+  const cleanTerms = /supply line|broken pipe|water heater|sink supply|burst pipe|clean water|category 1/i;
+  const narrativeText = (r.narrative || []).map(n => n.text).join(' ');
+  let suggestedCat = null;
+  if (blackTerms.test(narrativeText)) suggestedCat = 3;
+  else if (grayTerms.test(narrativeText)) suggestedCat = 2;
+  else if (cleanTerms.test(narrativeText)) suggestedCat = 1;
+  if (suggestedCat && r.category && suggestedCat !== r.category) {
+    add(SEV.MEDIUM, 'R-015', `Possible Category mismatch (documented Cat ${r.category}, narrative suggests Cat ${suggestedCat})`,
+      'Narrative keywords suggest a different category than documented. Review carefully — wrong category leads to wrong scope and lost revenue.',
+      `Documented Category: ${r.category}\nSuggested from narrative: ${suggestedCat}`);
+  }
+
+  // R-016: Class from affected percentages + Class 4 material detection
+  if (r.zones && r.zones.length) {
+    const allRooms = r.zones.flatMap(z => z.rooms || []);
+    if (allRooms.length) {
+      const avgTotal = allRooms.reduce((s, room) => s + (room.totalPct || 0), 0) / allRooms.length;
+      let suggestedClass = null;
+      if (avgTotal < 5) suggestedClass = 1;
+      else if (avgTotal < 40) suggestedClass = 2;
+      else suggestedClass = 3;
+      // Class 4 override: if low-evaporation materials are present in readings, recommend Class 4
+      if (r.class4Candidates && r.class4Candidates.length > 0) {
+        const class4Mats = r.class4Candidates.join(', ');
+        if (r.class !== 4) {
+          add(SEV.MEDIUM, 'R-016b', `Class 4 candidate materials detected — verify class assignment`,
+            `Low-evaporation materials present in readings (${class4Mats}). Per S500, Class 4 applies when these absorb significant water. Documented as Class ${r.class}; if these materials were wet at meaningful depth, this should be Class 4 (drying methodology and billing differ significantly).`,
+            `Documented Class: ${r.class}\nClass 4 candidate materials: ${class4Mats}\nRecommendation: review moisture content readings to determine if depth/saturation justifies Class 4.`);
+        }
+      }
+      if (r.class && suggestedClass !== r.class) {
+        add(SEV.MEDIUM, 'R-016', `Class recommendation: Class ${suggestedClass} (documented Class ${r.class})`,
+          `Per S500, Class is based on % of porous materials of combined floor/wall/ceiling. Average affected % across rooms is ${avgTotal.toFixed(1)}%. Computation suggests Class ${suggestedClass}. Verify against the actual material distribution — this is a heuristic.`,
+          `Documented Class: ${r.class}\nRecommended Class: ${suggestedClass}\nAvg affected %: ${avgTotal.toFixed(1)}%\nRoom breakdown: ${allRooms.map(rm => rm.name + '=' + rm.totalPct + '%').join(', ')}`);
+      }
+    }
+  }
+
+  return f;
+}
+
+// ============================================================
+// AI ANALYSIS
+// ============================================================
+function buildAIPrompt(report, findings) {
+  // Compute the affected-percent picture so the AI can recommend a Class.
+  const allRooms = (report.zones || []).flatMap(z => (z.rooms || []).map(rm => ({ zone: z.number, ...rm })));
+  const avgAffected = allRooms.length
+    ? (allRooms.reduce((s, rm) => s + (rm.totalPct || 0), 0) / allRooms.length).toFixed(1)
+    : null;
+
+  const summary = {
+    customer: report.customerName,
+    claim: report.claimNumber,
+    project: report.projectNumber,
+    documented: {
+      category: report.category,
+      class: report.class,
+      daysToDry: report.daysToDry,
+      totalAffectedSF: report.totalAffectedSF
+    },
+    timestamps: {
+      dateOfLoss: report.dateOfLoss && report.dateOfLoss.toISOString(),
+      lossReceived: report.lossReceived && report.lossReceived.toISOString(),
+      customerCalled: report.customerCalled && report.customerCalled.toISOString(),
+      siteInspected: report.siteInspected && report.siteInspected.toISOString(),
+      dryingComplete: report.dryingComplete && report.dryingComplete.toISOString()
+    },
+    zones: report.zones,
+    roomAffectedBreakdown: allRooms,
+    averageAffectedPct: avgAffected,
+    materialTypesObserved: report.materialTypes,
+    class4Candidates: report.class4Candidates,
+    missedDaysBySection: {
+      atmospheric: {
+        total: (report.missedAtmosphericDays || []).length,
+        byZone: (report.missedAtmosphericDays || []).reduce((acc, m) => {
+          const k = 'zone_' + m.zone;
+          acc[k] = (acc[k] || 0) + 1;
+          return acc;
+        }, {})
+      },
+      dehumidifier: {
+        total: (report.missedDehuDays || []).length,
+        byZone: (report.missedDehuDays || []).reduce((acc, m) => {
+          const k = 'zone_' + m.zone;
+          acc[k] = (acc[k] || 0) + 1;
+          return acc;
+        }, {})
+      },
+      material: {
+        totalDateColumns: report.materialTotalDateColumns,
+        bestRowReadings: report.materialBestRowReadings,
+        estimatedMissedDays: report.materialEstimatedMissedDays
+      }
+    },
+    atmosphericsSample: (report.atmospherics || []).slice(0, 40),
+    materialReadingsSample: (report.materialReadings || []).slice(0, 25),
+    narrativeSample: (report.narrative || []).slice(0, 12).map(n => ({
+      ts: n.timestamp && n.timestamp.toISOString(),
+      text: (n.text || '').slice(0, 700)
+    })),
+    hardRuleFindings: findings.map(f => ({ sev: f.severity, rule: f.rule, title: f.title }))
+  };
+
+  return `You are a senior IICRC S500 water-damage QC reviewer. A DryBooks drying report has been scrubbed by an automated rules engine; the hard-rule findings are listed in "hardRuleFindings". Your job is to deliver RECOMMENDATIONS, not just observations.
+
+REPORT DATA (JSON):
+${JSON.stringify(summary, null, 2)}
+
+Produce the following output, in this exact order, using these section headers:
+
+## CLASS OF WATER RECOMMENDATION
+Per IICRC S500:
+- Class 1: porous materials < 5% of combined floor/wall/ceiling area
+- Class 2: 5% to 40%
+- Class 3: > 40%
+- Class 4: significant water absorption into low-evaporation materials (plaster, wood, concrete, masonry, multi-layer assemblies) — requires special methods/longer drying
+Using "roomAffectedBreakdown" and "materialTypesObserved", recommend a Class with specific numeric reasoning. State whether the documented Class is correct, and if not, what it should be. If Class 4 candidate materials are present, evaluate whether they were wet at meaningful depth based on the moisture readings.
+
+## CATEGORY OF WATER RECOMMENDATION
+Per S500:
+- Category 1: clean water (supply lines, tub overflow, broken pipes, rain)
+- Category 2: significantly contaminated (gray water — washing machine, dishwasher, aged Cat 1)
+- Category 3: grossly contaminated (sewage, toilet overflow, ground water, rising water)
+Review "narrativeSample" for source-of-loss clues. Recommend a Category with reasoning quoting specific narrative phrases.
+
+## DRYING TIMELINE ASSESSMENT
+Compare days to dry against 5-7 day target. If extended, evaluate whether the narrative documents proper authorization (dated adjuster contact, named adjuster, specific scope authorized). State whether the file is defensible against carrier chargeback for the extended days.
+
+## READINGS INTEGRITY
+Examine "atmosphericsSample" and "materialReadingsSample" for fabrication signals: identical readings across days, perfect arithmetic sequences, low GDep (<6) and low GPP (<=32) in affected areas that look implausible. Cite specific values and dates. State which readings, if any, you would not trust if you were the carrier reviewer.
+
+## MISSED MONITORING DAYS
+"missedDaysBySection" lists how many days are missing per section. For EACH section (atmospheric, dehumidifier, material), explain the specific revenue/billing exposure created by the gap and the corrective documentation needed to defend those days against chargeback.
+
+## CORRECTIVE ACTIONS
+For each hard-rule finding in "hardRuleFindings", provide ONE concrete corrective action the project manager should take BEFORE this file leaves the office. Format: "[Rule code] → action: ..."
+
+## ADDITIONAL FINDINGS
+Anything the hard rules missed — narrative quality issues, missing authorizations for billable scope items (asbestos, HEPA, demo, packout), inconsistencies. Each: severity + one-paragraph explanation.
+
+Be ruthless and specific. Cite actual values and dates from the data. Do not pad with disclaimers. Assume the carrier reviewer is actively trying to reduce the invoice.`;
+}
+
+async function callGemini(apiKey, prompt) {
+  const key = apiKey || 'AIzaSyDEFAULT_NO_KEY_PLACEHOLDER';
+  // If no key, we cannot call. Return a helpful message.
+  if (!apiKey) {
+    return { error: 'No Gemini API key configured. Open Settings to add one (free at aistudio.google.com/app/apikey), or switch to "No AI" mode.' };
+  }
+  try {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${encodeURIComponent(apiKey)}`;
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+    });
+    if (!resp.ok) {
+      const errTxt = await resp.text();
+      return { error: `Gemini API error (${resp.status}): ${errTxt.slice(0, 300)}` };
+    }
+    const data = await resp.json();
+    return { text: data.candidates?.[0]?.content?.parts?.[0]?.text || '(empty response)' };
+  } catch (e) {
+    return { error: 'Gemini call failed: ' + e.message };
+  }
+}
+
+async function callAnthropic(apiKey, prompt) {
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 2000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    if (!resp.ok) {
+      const errTxt = await resp.text();
+      return { error: `Anthropic API error (${resp.status}): ${errTxt.slice(0, 300)}` };
+    }
+    const data = await resp.json();
+    return { text: data.content?.[0]?.text || '(empty response)' };
+  } catch (e) { return { error: 'Anthropic call failed: ' + e.message }; }
+}
+
+async function callOpenAI(apiKey, prompt) {
+  try {
+    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    if (!resp.ok) {
+      const errTxt = await resp.text();
+      return { error: `OpenAI API error (${resp.status}): ${errTxt.slice(0, 300)}` };
+    }
+    const data = await resp.json();
+    return { text: data.choices?.[0]?.message?.content || '(empty response)' };
+  } catch (e) { return { error: 'OpenAI call failed: ' + e.message }; }
+}
+
+async function callWorker(workerUrl, password, prompt) {
+  if (!workerUrl) {
+    return { error: 'No Worker URL configured. Open Settings and paste the URL your admin shared.' };
+  }
+  try {
+    const headers = { 'Content-Type': 'application/json' };
+    if (password) headers['X-Scrubber-Password'] = password;
+    const resp = await fetch(workerUrl, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ prompt })
+    });
+    if (!resp.ok) {
+      const errTxt = await resp.text();
+      return { error: `Worker error (${resp.status}): ${errTxt.slice(0, 400)}` };
+    }
+    const data = await resp.json();
+    if (data.error) return { error: data.error };
+    return { text: data.text || '(empty response from Worker)' };
+  } catch (e) {
+    return { error: 'Worker call failed: ' + e.message + ' (check the URL and that the Worker is deployed)' };
+  }
+}
+
+async function runAI(report, findings) {
+  const settings = loadSettings();
+  if (settings.provider === 'none') return null;
+  const prompt = buildAIPrompt(report, findings);
+  if (settings.provider === 'worker') return await callWorker(settings.workerUrl, settings.workerPassword, prompt);
+  if (settings.provider === 'anthropic') return await callAnthropic(settings.apiKey, prompt);
+  if (settings.provider === 'openai') return await callOpenAI(settings.apiKey, prompt);
+  return await callGemini(settings.apiKey, prompt);
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function renderReport(report, findings, aiResult) {
+  const root = document.getElementById('results');
+  const sevCounts = { critical: 0, high: 0, medium: 0, low: 0 };
+  findings.forEach(f => sevCounts[f.severity]++);
+
+  const sortOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+  findings.sort((a, b) => sortOrder[a.severity] - sortOrder[b.severity]);
+
+  const dur = (a, b) => (a && b) ? ((b - a) / 3600000).toFixed(1) + 'h' : '—';
+
+  root.innerHTML = `
+    <div class="summary-card">
+      <h2>Report Summary</h2>
+      <div class="grid">
+        <div class="meta"><div class="label">Customer</div><div class="value">${report.customerName || '—'}</div></div>
+        <div class="meta"><div class="label">Claim #</div><div class="value">${report.claimNumber || '—'}</div></div>
+        <div class="meta"><div class="label">Project #</div><div class="value">${report.projectNumber || '—'}</div></div>
+        <div class="meta"><div class="label">Cat / Class</div><div class="value">Cat ${report.category ?? '?'} / Class ${report.class ?? '?'}</div></div>
+        <div class="meta"><div class="label">Days to Dry</div><div class="value">${report.daysToDry ?? '—'}</div></div>
+        <div class="meta"><div class="label">Total Affected SF</div><div class="value">${report.totalAffectedSF ?? '—'}</div></div>
+        <div class="meta"><div class="label">Zones</div><div class="value">${report.dryingZones ?? '—'}</div></div>
+        <div class="meta"><div class="label">Loss → Contact</div><div class="value">${dur(report.lossReceived, report.customerCalled)}</div></div>
+        <div class="meta"><div class="label">Loss → Inspect</div><div class="value">${dur(report.lossReceived, report.siteInspected)}</div></div>
+      </div>
+
+      <div class="severity-summary">
+        ${sevCounts.critical ? `<span class="badge critical"><span class="dot"></span>${sevCounts.critical} Critical</span>` : ''}
+        ${sevCounts.high ? `<span class="badge high"><span class="dot"></span>${sevCounts.high} High</span>` : ''}
+        ${sevCounts.medium ? `<span class="badge medium"><span class="dot"></span>${sevCounts.medium} Medium</span>` : ''}
+        ${sevCounts.low ? `<span class="badge low"><span class="dot"></span>${sevCounts.low} Low</span>` : ''}
+        ${findings.length === 0 ? `<span class="badge ok"><span class="dot"></span>No hard-rule issues</span>` : ''}
+      </div>
+
+      <div class="findings">
+        ${findings.length === 0
+          ? '<div class="empty-ok">No hard-rule violations detected. Review AI analysis below for nuanced issues.</div>'
+          : findings.map(f => `
+            <div class="finding ${f.severity}">
+              <div class="finding-header">
+                <div class="finding-title">${escapeHtml(f.title)}</div>
+                <div class="finding-rule">${f.rule}</div>
+              </div>
+              <div class="finding-message">${escapeHtml(f.message)}</div>
+              ${f.evidence ? `<div class="finding-evidence">${escapeHtml(f.evidence)}</div>` : ''}
+            </div>
+          `).join('')}
+      </div>
+
+      <div class="actions-bar">
+        <button onclick="exportMarkdown()">Export Markdown</button>
+        <button onclick="window.print()">Print / PDF</button>
+      </div>
+    </div>
+
+    ${aiResult ? `
+      <div class="ai-section">
+        <div class="ai-label">AI Judgment Layer</div>
+        <h2>Additional findings the rules engine couldn't catch</h2>
+        ${aiResult.error
+          ? `<div style="color: var(--high);">${escapeHtml(aiResult.error)}</div>`
+          : `<div class="ai-content">${escapeHtml(aiResult.text)}</div>`}
+      </div>
+    ` : ''}
+  `;
+  window._lastReport = { report, findings, aiResult };
+}
