@@ -40,25 +40,32 @@
 
   .section-title { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin: 28px 0 12px; padding-left: 4px; border-left: 3px solid var(--accent); padding-left: 10px; }
 
-  .finding { border-radius: 10px; border: 1px solid; padding: 16px 18px; margin-bottom: 12px; }
-  .finding.critical { border-color: rgba(239,68,68,.4); background: rgba(239,68,68,.06); }
-  .finding.high     { border-color: rgba(249,115,22,.4); background: rgba(249,115,22,.06); }
-  .finding.medium   { border-color: rgba(245,158,11,.4); background: rgba(245,158,11,.06); }
-  .finding.info     { border-color: rgba(79,142,247,.3); background: rgba(79,142,247,.05); }
-  .finding.pass     { border-color: rgba(34,197,94,.3); background: rgba(34,197,94,.05); }
+  /* Finding cards — bold severity colors */
+  .finding { border-radius: 10px; border: 1px solid; border-left: 6px solid; padding: 0; margin-bottom: 14px; overflow: hidden; }
+  .finding.critical { border-color: rgba(239,68,68,.5); border-left-color: #ef4444; background: rgba(239,68,68,.07); }
+  .finding.high     { border-color: rgba(249,115,22,.5); border-left-color: #f97316; background: rgba(249,115,22,.07); }
+  .finding.medium   { border-color: rgba(245,158,11,.5); border-left-color: #f59e0b; background: rgba(245,158,11,.07); }
+  .finding.info     { border-color: rgba(79,142,247,.4);  border-left-color: #4f8ef7; background: rgba(79,142,247,.06); }
+  .finding.pass     { border-color: rgba(34,197,94,.4);  border-left-color: #22c55e; background: rgba(34,197,94,.06); }
 
-  .finding-header { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 0; }
-  .finding-badge { font-size: .65rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; padding: 3px 8px; border-radius: 4px; white-space: nowrap; flex-shrink: 0; margin-top: 2px; }
-  .critical .finding-badge { background: rgba(239,68,68,.2); color: #f87171; }
-  .high .finding-badge     { background: rgba(249,115,22,.2); color: #fb923c; }
-  .medium .finding-badge   { background: rgba(245,158,11,.2); color: #fbbf24; }
-  .info .finding-badge     { background: rgba(79,142,247,.2); color: #60a5fa; }
-  .pass .finding-badge     { background: rgba(34,197,94,.2); color: #4ade80; }
+  .finding-header { display: flex; align-items: center; gap: 12px; padding: 11px 16px; cursor: pointer; }
+  .critical .finding-header { background: rgba(239,68,68,.18); }
+  .high     .finding-header { background: rgba(249,115,22,.18); }
+  .medium   .finding-header { background: rgba(245,158,11,.18); }
+  .info     .finding-header { background: rgba(79,142,247,.14); }
+  .pass     .finding-header { background: rgba(34,197,94,.14); }
+
+  .finding-badge { font-size: .7rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; padding: 4px 10px; border-radius: 4px; white-space: nowrap; flex-shrink: 0; }
+  .critical .finding-badge { background: #ef4444; color: #fff; }
+  .high     .finding-badge { background: #f97316; color: #fff; }
+  .medium   .finding-badge { background: #f59e0b; color: #1a1a00; }
+  .info     .finding-badge { background: #4f8ef7; color: #fff; }
+  .pass     .finding-badge { background: #22c55e; color: #fff; }
 
   .finding-title { font-size: .95rem; font-weight: 700; flex: 1; }
-  .finding-body { margin-top: 12px; display: none; }
+  .finding-body { padding: 14px 18px 16px; display: none; }
   .finding.open .finding-body { display: block; }
-  .finding-toggle { cursor: pointer; color: var(--muted); font-size: .8rem; flex-shrink: 0; margin-top: 3px; user-select: none; }
+  .finding-toggle { cursor: pointer; color: var(--muted); font-size: .8rem; flex-shrink: 0; user-select: none; }
 
   .finding-what, .finding-why, .finding-action { margin-bottom: 10px; }
   .finding-what label, .finding-why label, .finding-action label {
@@ -889,6 +896,26 @@ function renderResults(r, findings) {
   const score = Math.max(0, 100 - critCount*20 - highCount*10 - medCount*4);
   const scoreColor = score >= 80 ? '#22c55e' : score >= 60 ? '#f59e0b' : '#ef4444';
 
+  // Timing boxes
+  const contactMin = diffMinutes(r.lossReceived, r.custCalled);
+  const siteMin    = diffMinutes(r.lossReceived, r.siteInspected);
+  const contactOk  = contactMin !== null && contactMin >= 0 && contactMin <= 60;
+  const siteOk     = siteMin    !== null && siteMin    >= 0 && siteMin    <= 240;
+  const contactLabel = contactMin === null ? 'No Data'
+    : contactMin < 0 ? 'Invalid Timestamp'
+    : contactMin <= 60 ? `${contactMin} min ✓`
+    : `${contactMin} min ✗`;
+  const siteLabel = siteMin === null ? 'No Data'
+    : siteMin < 0 ? 'Invalid Timestamp'
+    : siteMin <= 240 ? `${(siteMin/60).toFixed(1)} hrs ✓`
+    : `${(siteMin/60).toFixed(1)} hrs ✗`;
+  const contactStyle = contactMin === null ? 'background:#2e3350;color:#94a3b8'
+    : contactOk ? 'background:rgba(34,197,94,.25);color:#4ade80;border-color:rgba(34,197,94,.6)'
+    : 'background:rgba(239,68,68,.25);color:#f87171;border-color:rgba(239,68,68,.6)';
+  const siteStyle = siteMin === null ? 'background:#2e3350;color:#94a3b8'
+    : siteOk ? 'background:rgba(34,197,94,.25);color:#4ade80;border-color:rgba(34,197,94,.6)'
+    : 'background:rgba(239,68,68,.25);color:#f87171;border-color:rgba(239,68,68,.6)';
+
   let html = `
   <div class="score-bar">
     <div class="score-circle" style="border-color:${scoreColor};color:${scoreColor}">${score}</div>
@@ -911,41 +938,35 @@ function renderResults(r, findings) {
     <div class="report-header-item"><label>Cause of Loss</label><value>${r.causeOfLoss || 'Not specified'}</value></div>
     <div class="report-header-item"><label>Total Affected SF</label><value>${r.totalAffectedSF || 'Unknown'}</value></div>
     <div class="report-header-item"><label>Drying Zones</label><value>${r.dryingZones || '?'}</value></div>
+    <div class="report-header-item">
+      <label>Loss → Contact (≤60 min)</label>
+      <value style="display:inline-block;padding:4px 10px;border-radius:6px;border:1px solid rgba(100,100,100,.3);font-size:.9rem;font-weight:700;${contactStyle}">${contactLabel}</value>
+    </div>
+    <div class="report-header-item">
+      <label>Loss → Site Inspection (≤4 hrs)</label>
+      <value style="display:inline-block;padding:4px 10px;border-radius:6px;border:1px solid rgba(100,100,100,.3);font-size:.9rem;font-weight:700;${siteStyle}">${siteLabel}</value>
+    </div>
   </div>`;
 
-  // Group findings
-  const order = ['critical','high','medium','info','pass'];
-  const grouped = {};
-  order.forEach(s => { grouped[s] = findings.filter(f => f.severity === s); });
+  // ── Findings in chronological (document) order ─────────────────────────────
+  html += `<div class="section-title">📋 Report Findings — In Document Order</div>`;
+  findings.forEach((f, idx) => {
+    const uid = `f-${idx}`;
+    const sevLabel = { critical:'🚨 Critical', high:'⚠️ High', medium:'📋 Medium', info:'ℹ️ Info', pass:'✅ Pass' }[f.severity] || f.severity;
+    html += `
+    <div class="finding ${f.severity}" id="${uid}">
+      <div class="finding-header" onclick="toggleFinding('${uid}')">
+        <span class="finding-badge">${sevLabel}</span>
+        <span class="finding-title">${f.title}</span>
+        <span class="finding-toggle">▼ Details</span>
+      </div>
+      <div class="finding-body">`;
 
-  const sectionLabels = {
-    critical: '🚨 Critical Issues — Fix Immediately',
-    high:     '⚠️ High Priority Issues',
-    medium:   '📋 Medium Priority — Needs Documentation',
-    info:     'ℹ️ Informational Notes',
-    pass:     '✅ Checks Passed'
-  };
+    if (f.what) html += `<div class="finding-what"><label>📌 What Was Found</label><p>${f.what.replace(/\n/g,'<br>')}</p></div>`;
+    if (f.why)  html += `<div class="finding-why"><label>❓ Why This Matters</label><p>${f.why.replace(/\n/g,'<br>')}${f.s500ref ? `<br><span class="s500-ref">📖 ${f.s500ref}</span>` : ''}</p></div>`;
+    if (f.action) html += `<div class="finding-action"><label>✅ What To Do</label><p>${f.action.replace(/\n/g,'<br>')}</p></div>`;
 
-  order.forEach(sev => {
-    if (!grouped[sev] || grouped[sev].length === 0) return;
-    html += `<div class="section-title">${sectionLabels[sev]}</div>`;
-    grouped[sev].forEach((f, idx) => {
-      const uid = `f-${sev}-${idx}`;
-      html += `
-      <div class="finding ${f.severity}" id="${uid}">
-        <div class="finding-header" onclick="toggleFinding('${uid}')">
-          <span class="finding-badge">${f.severity}</span>
-          <span class="finding-title">${f.title}</span>
-          <span class="finding-toggle">▼ Details</span>
-        </div>
-        <div class="finding-body">`;
-
-      if (f.what) html += `<div class="finding-what"><label>📌 What Was Found</label><p>${f.what.replace(/\n/g,'<br>')}</p></div>`;
-      if (f.why)  html += `<div class="finding-why"><label>❓ Why This Matters</label><p>${f.why.replace(/\n/g,'<br>')}${f.s500ref ? `<br><span class="s500-ref">📖 ${f.s500ref}</span>` : ''}</p></div>`;
-      if (f.action) html += `<div class="finding-action"><label>✅ What To Do</label><p>${f.action.replace(/\n/g,'<br>')}</p></div>`;
-
-      html += `</div></div>`;
-    });
+    html += `</div></div>`;
   });
 
   // AI section placeholder
@@ -961,8 +982,7 @@ function renderResults(r, findings) {
   // Auto-open critical/high findings
   findings.forEach((f, idx) => {
     if (['critical','high'].includes(f.severity)) {
-      const uid = `f-${f.severity}-${findings.filter((x,i) => i<idx && x.severity===f.severity).length}`;
-      const el2 = document.getElementById(uid);
+      const el2 = document.getElementById(`f-${idx}`);
       if (el2) el2.classList.add('open');
     }
   });
