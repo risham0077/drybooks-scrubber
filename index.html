@@ -3,1538 +3,1177 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DryBooks Scrubber — IICRC S500 QC Tool</title>
+<title>DryBooks Report Scrubber</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
   :root {
-    --bg: #0e1116;
-    --panel: #161b22;
-    --panel-2: #1f262f;
-    --border: #2d343d;
-    --text: #e6edf3;
-    --muted: #8b949e;
-    --accent: #2f81f7;
-    --crit: #f85149;
-    --high: #ff9a3c;
-    --med: #d29922;
-    --low: #3fb950;
-    --ok: #56d364;
+    --bg: #0f1117; --surface: #1a1d27; --surface2: #22263a;
+    --border: #2e3350; --accent: #4f8ef7; --accent2: #7c3aed;
+    --text: #e2e8f0; --muted: #94a3b8; --red: #ef4444; --yellow: #f59e0b;
+    --green: #22c55e; --orange: #f97316; --purple: #a855f7;
   }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    line-height: 1.5;
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; }
+  header h1 { font-size: 1.1rem; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 10px; }
+  header h1 span { background: linear-gradient(135deg,var(--accent),var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .btn { padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface2); color: var(--text); cursor: pointer; font-size: .875rem; transition: all .2s; }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #3b7de8; color: #fff; }
+  main { max-width: 1100px; margin: 0 auto; padding: 32px 20px; }
+  .drop-zone { border: 2px dashed var(--border); border-radius: 16px; padding: 60px 20px; text-align: center; cursor: pointer; transition: all .3s; background: var(--surface); margin-bottom: 32px; }
+  .drop-zone:hover, .drop-zone.drag-over { border-color: var(--accent); background: rgba(79,142,247,.05); }
+  .drop-zone .icon { font-size: 3rem; margin-bottom: 12px; }
+  .drop-zone h2 { font-size: 1.2rem; margin-bottom: 8px; }
+  .drop-zone p { color: var(--muted); font-size: .9rem; }
+  #file-input { display: none; }
+  .progress-bar { height: 4px; background: var(--surface2); border-radius: 2px; overflow: hidden; margin-bottom: 32px; display: none; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg,var(--accent),var(--accent2)); border-radius: 2px; transition: width .3s; }
+  .status-msg { text-align: center; color: var(--muted); font-size: .9rem; margin-bottom: 16px; display: none; }
+
+  /* Results */
+  #results { display: none; }
+  .report-header { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px; margin-bottom: 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+  .report-header-item label { font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); display: block; margin-bottom: 4px; }
+  .report-header-item value { font-size: .95rem; font-weight: 600; }
+
+  .section-title { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin: 28px 0 12px; padding-left: 4px; border-left: 3px solid var(--accent); padding-left: 10px; }
+
+  .finding { border-radius: 10px; border: 1px solid; padding: 16px 18px; margin-bottom: 12px; }
+  .finding.critical { border-color: rgba(239,68,68,.4); background: rgba(239,68,68,.06); }
+  .finding.high     { border-color: rgba(249,115,22,.4); background: rgba(249,115,22,.06); }
+  .finding.medium   { border-color: rgba(245,158,11,.4); background: rgba(245,158,11,.06); }
+  .finding.info     { border-color: rgba(79,142,247,.3); background: rgba(79,142,247,.05); }
+  .finding.pass     { border-color: rgba(34,197,94,.3); background: rgba(34,197,94,.05); }
+
+  .finding-header { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 0; }
+  .finding-badge { font-size: .65rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; padding: 3px 8px; border-radius: 4px; white-space: nowrap; flex-shrink: 0; margin-top: 2px; }
+  .critical .finding-badge { background: rgba(239,68,68,.2); color: #f87171; }
+  .high .finding-badge     { background: rgba(249,115,22,.2); color: #fb923c; }
+  .medium .finding-badge   { background: rgba(245,158,11,.2); color: #fbbf24; }
+  .info .finding-badge     { background: rgba(79,142,247,.2); color: #60a5fa; }
+  .pass .finding-badge     { background: rgba(34,197,94,.2); color: #4ade80; }
+
+  .finding-title { font-size: .95rem; font-weight: 700; flex: 1; }
+  .finding-body { margin-top: 12px; display: none; }
+  .finding.open .finding-body { display: block; }
+  .finding-toggle { cursor: pointer; color: var(--muted); font-size: .8rem; flex-shrink: 0; margin-top: 3px; user-select: none; }
+
+  .finding-what, .finding-why, .finding-action { margin-bottom: 10px; }
+  .finding-what label, .finding-why label, .finding-action label {
+    font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); display: block; margin-bottom: 4px;
   }
-  header {
-    background: var(--panel);
-    border-bottom: 1px solid var(--border);
-    padding: 16px 24px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  header h1 {
-    margin: 0;
-    font-size: 18px;
-    font-weight: 600;
-  }
-  header .subtitle { font-size: 12px; color: var(--muted); margin-top: 2px; }
-  header button {
-    background: var(--panel-2);
-    border: 1px solid var(--border);
-    color: var(--text);
-    padding: 6px 14px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 13px;
-  }
-  header button:hover { background: var(--border); }
-  main {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 24px;
-  }
-  .dropzone {
-    border: 2px dashed var(--border);
-    border-radius: 12px;
-    padding: 60px 24px;
-    text-align: center;
-    background: var(--panel);
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .dropzone:hover, .dropzone.dragover {
-    border-color: var(--accent);
-    background: var(--panel-2);
-  }
-  .dropzone h2 { margin: 0 0 8px; font-size: 20px; }
-  .dropzone p { margin: 0; color: var(--muted); font-size: 14px; }
-  .dropzone input[type=file] { display: none; }
-  .status {
-    margin-top: 16px;
-    padding: 12px 16px;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    font-size: 13px;
-    display: none;
-  }
-  .status.show { display: block; }
-  .status.error { border-color: var(--crit); }
-  .summary-card {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 20px;
-    margin-top: 24px;
-  }
-  .summary-card h2 { margin: 0 0 16px; font-size: 16px; }
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 12px;
-  }
-  .meta {
-    background: var(--panel-2);
-    padding: 10px 12px;
-    border-radius: 6px;
-    border: 1px solid var(--border);
-  }
-  .meta .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
-  .meta .value { font-size: 14px; margin-top: 4px; font-weight: 500; }
-  .severity-summary { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0; }
-  .badge {
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 600;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .badge .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-  .badge.critical { background: rgba(248,81,73,0.15); color: var(--crit); }
-  .badge.critical .dot { background: var(--crit); }
-  .badge.high { background: rgba(255,154,60,0.15); color: var(--high); }
-  .badge.high .dot { background: var(--high); }
-  .badge.medium { background: rgba(210,153,34,0.15); color: var(--med); }
-  .badge.medium .dot { background: var(--med); }
-  .badge.low { background: rgba(63,185,113,0.15); color: var(--low); }
-  .badge.low .dot { background: var(--low); }
-  .badge.ok { background: rgba(86,211,100,0.15); color: var(--ok); }
-  .findings { margin-top: 16px; }
-  .finding {
-    background: var(--panel-2);
-    border: 1px solid var(--border);
-    border-left: 4px solid var(--med);
-    border-radius: 6px;
-    padding: 14px 16px;
-    margin-bottom: 10px;
-  }
-  .finding.critical { border-left-color: var(--crit); }
-  .finding.high { border-left-color: var(--high); }
-  .finding.medium { border-left-color: var(--med); }
-  .finding.low { border-left-color: var(--low); }
-  .finding-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: start;
-    gap: 12px;
-    margin-bottom: 6px;
-  }
-  .finding-title { font-weight: 600; font-size: 14px; }
-  .finding-rule { font-size: 11px; color: var(--muted); font-family: monospace; }
-  .finding-message { font-size: 13px; color: var(--text); }
-  .finding-evidence {
-    margin-top: 8px;
-    padding: 8px 10px;
-    background: rgba(0,0,0,0.3);
-    border-radius: 4px;
-    font-family: monospace;
-    font-size: 12px;
-    color: var(--muted);
-    white-space: pre-wrap;
-  }
-  .modal-backdrop {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.7);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 100;
-  }
-  .modal-backdrop.show { display: flex; }
-  .modal {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 24px;
-    max-width: 520px;
-    width: 90%;
-    max-height: 80vh;
-    overflow-y: auto;
-  }
-  .modal h2 { margin: 0 0 12px; font-size: 18px; }
-  .modal p { color: var(--muted); font-size: 13px; }
-  .modal label { display: block; margin: 16px 0 6px; font-size: 13px; font-weight: 500; }
-  .modal input, .modal select {
-    width: 100%;
-    padding: 10px 12px;
-    background: var(--panel-2);
-    border: 1px solid var(--border);
-    color: var(--text);
-    border-radius: 6px;
-    font-size: 13px;
-    font-family: inherit;
-  }
-  .modal .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
-  .steps-card {
-    background: var(--panel-2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 14px 16px;
-    margin-top: 16px;
-  }
-  .steps-card h3 {
-    margin: 0 0 10px;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--accent);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-  .steps-list {
-    list-style: none;
-    counter-reset: step;
-    padding: 0;
-    margin: 0;
-  }
-  .steps-list li {
-    counter-increment: step;
-    padding-left: 32px;
-    position: relative;
-    font-size: 13px;
-    line-height: 1.5;
-    margin-bottom: 10px;
-    color: var(--text);
-  }
-  .steps-list li:last-child { margin-bottom: 0; }
-  .steps-list li::before {
-    content: counter(step);
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 22px;
-    height: 22px;
-    background: var(--accent);
-    color: white;
-    border-radius: 50%;
-    text-align: center;
-    line-height: 22px;
-    font-size: 12px;
-    font-weight: 600;
-  }
-  .steps-list code {
-    background: rgba(0,0,0,0.4);
-    padding: 1px 6px;
-    border-radius: 3px;
-    font-family: monospace;
-    font-size: 12px;
-  }
-  .steps-list a {
-    color: var(--accent);
-    text-decoration: none;
-    font-weight: 500;
-  }
-  .steps-list a:hover { text-decoration: underline; }
-  .steps-note {
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px solid var(--border);
-    font-size: 11px;
-    color: var(--muted);
-  }
-  .provider-steps { display: none; }
-  .provider-steps.active { display: block; }
-  .modal button {
-    background: var(--accent);
-    border: none;
-    color: white;
-    padding: 8px 16px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 13px;
-    font-weight: 500;
-  }
-  .modal button.secondary { background: var(--panel-2); border: 1px solid var(--border); }
-  .modal a { color: var(--accent); }
-  .ai-section {
-    margin-top: 24px;
-    background: linear-gradient(135deg, rgba(47,129,247,0.1), rgba(47,129,247,0.03));
-    border: 1px solid rgba(47,129,247,0.3);
-    border-radius: 12px;
-    padding: 20px;
-  }
-  .ai-section h2 { margin: 0 0 8px; font-size: 16px; }
-  .ai-section .ai-label { font-size: 11px; color: var(--accent); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
-  .ai-content { font-size: 13px; line-height: 1.6; white-space: pre-wrap; color: var(--text); margin-top: 12px; }
-  .actions-bar { display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end; }
-  .actions-bar button {
-    background: var(--panel-2);
-    border: 1px solid var(--border);
-    color: var(--text);
-    padding: 8px 14px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 13px;
-  }
-  .privacy {
-    font-size: 11px;
-    color: var(--muted);
-    margin-top: 12px;
-    text-align: center;
-  }
-  .spinner {
-    display: inline-block;
-    width: 14px;
-    height: 14px;
-    border: 2px solid var(--border);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-    vertical-align: middle;
-    margin-right: 6px;
-  }
+  .finding-what p, .finding-why p, .finding-action p { font-size: .875rem; line-height: 1.6; color: var(--text); }
+  .finding-action p { color: #86efac; }
+  .s500-ref { display: inline-block; font-size: .7rem; background: rgba(168,85,247,.15); color: #c084fc; padding: 2px 7px; border-radius: 4px; font-weight: 600; margin-top: 4px; }
+
+  .ai-section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-top: 8px; }
+  .ai-section h3 { font-size: .9rem; color: var(--accent); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .ai-content { font-size: .875rem; line-height: 1.75; color: var(--text); white-space: pre-wrap; }
+  .ai-loading { text-align: center; color: var(--muted); padding: 32px; }
+  .ai-spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; margin-right: 8px; vertical-align: middle; }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .empty-ok {
-    text-align: center;
-    padding: 24px;
-    color: var(--ok);
-    font-size: 14px;
-  }
+
+  .score-bar { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px; margin-bottom: 24px; display: flex; align-items: center; gap: 20px; }
+  .score-circle { width: 72px; height: 72px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.4rem; font-weight: 800; border: 4px solid; }
+  .score-info h3 { font-size: 1rem; margin-bottom: 4px; }
+  .score-info p  { font-size: .8rem; color: var(--muted); }
+  .counts { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 8px; }
+  .count-badge { font-size: .75rem; padding: 3px 10px; border-radius: 12px; font-weight: 700; }
+
+  /* Modal */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 100; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; width: 90%; max-width: 560px; max-height: 90vh; overflow-y: auto; padding: 28px; }
+  .modal h2 { font-size: 1.1rem; margin-bottom: 20px; }
+  .form-group { margin-bottom: 16px; }
+  .form-group label { font-size: .8rem; color: var(--muted); display: block; margin-bottom: 6px; font-weight: 600; }
+  .form-group select, .form-group input { width: 100%; background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 10px 12px; border-radius: 8px; font-size: .875rem; }
+  .form-group select:focus, .form-group input:focus { outline: none; border-color: var(--accent); }
+  .steps { background: var(--surface2); border-radius: 8px; padding: 14px 16px; margin-top: 8px; }
+  .steps ol { margin: 0; padding-left: 18px; }
+  .steps li { font-size: .8rem; color: var(--muted); margin-bottom: 6px; line-height: 1.5; }
+  .steps li strong { color: var(--text); }
+  .steps a { color: var(--accent); }
+  .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+
+  .tag-critical { color: #f87171; } .tag-high { color: #fb923c; } .tag-pass { color: #4ade80; }
+  @media(max-width:600px) { .report-header { grid-template-columns: 1fr 1fr; } .counts { gap: 8px; } }
 </style>
 </head>
 <body>
+
 <header>
-  <div>
-    <h1>DryBooks Scrubber</h1>
-    <div class="subtitle">IICRC S500 QC review — flag carrier chargeback risks before they leave the office</div>
+  <h1>🔍 DryBooks <span>Report Scrubber</span></h1>
+  <div style="display:flex;gap:8px">
+    <button class="btn" onclick="document.getElementById('file-input').click()">📄 Upload PDF</button>
+    <button class="btn" onclick="openSettings()">⚙️ Settings</button>
   </div>
-  <button id="settingsBtn">Settings</button>
 </header>
 
+<input type="file" id="file-input" accept=".pdf" onchange="handleFileInput(event)">
+
 <main>
-  <div class="dropzone" id="dropzone">
+  <div class="drop-zone" id="drop-zone">
+    <div class="icon">📋</div>
     <h2>Drop a DryBooks PDF here</h2>
-    <p>or click to choose a file — processed locally in your browser</p>
-    <input type="file" id="fileInput" accept="application/pdf">
+    <p>Drag and drop your drying report, or click the Upload button above<br>
+    The report will be automatically checked for issues</p>
   </div>
-  <div class="status" id="status"></div>
+
+  <div class="progress-bar" id="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+  <div class="status-msg" id="status-msg"></div>
+
   <div id="results"></div>
-  <div class="privacy">PDFs never leave your browser. Only the extracted summary is sent to the AI provider you configure. Each user's API key stays in their own browser (localStorage).</div>
 </main>
 
-<div class="modal-backdrop" id="settingsModal">
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settings-modal">
   <div class="modal">
-    <h2>AI Settings</h2>
-    <p>Pick an AI provider and paste your API key. Keys stay in your browser — never sent anywhere except directly to the provider.</p>
+    <h2>⚙️ Settings — AI Provider</h2>
 
-    <label>AI Provider</label>
-    <select id="provider">
-      <option value="worker">Shared Worker (managed by your team — no key needed)</option>
-      <option value="gemini">Google Gemini Flash (your own key)</option>
-      <option value="anthropic">Anthropic Claude (your own key)</option>
-      <option value="openai">OpenAI GPT (your own key)</option>
-      <option value="none">No AI (hard rules only)</option>
-    </select>
+    <div class="form-group">
+      <label>AI Provider</label>
+      <select id="provider-select" onchange="updateProviderUI()">
+        <option value="worker">Shared Worker (managed key — no setup needed)</option>
+        <option value="gemini">Gemini Flash (my own free key)</option>
+        <option value="claude">Anthropic Claude (my own key)</option>
+        <option value="openai">OpenAI GPT (my own key)</option>
+        <option value="none">No AI — rules only</option>
+      </select>
+    </div>
 
     <div id="worker-fields">
-      <label>Worker URL</label>
-      <input type="text" id="workerUrl" placeholder="https://drybooks-scrubber.yourname.workers.dev">
-      <label>Shared Password (optional — only if your admin set one)</label>
-      <input type="password" id="workerPassword" placeholder="Leave blank if no password was set">
-    </div>
-
-    <div id="key-fields">
-      <label>Your API Key</label>
-      <input type="password" id="apiKey" placeholder="Paste your API key here">
-    </div>
-
-    <!-- Shared Worker step-by-step (for reviewers using a team-managed Worker) -->
-    <div class="provider-steps active" id="steps-worker">
-      <div class="steps-card">
-        <h3>Using a Shared Worker (no key needed)</h3>
-        <ol class="steps-list">
-          <li>Your admin (the person who set this up) should have sent you a Worker URL — it looks like <code>https://drybooks-scrubber.<em>something</em>.workers.dev</code>.</li>
-          <li>Paste that URL into the <strong>Worker URL</strong> box above.</li>
-          <li>If your admin also set a shared password, paste it into the <strong>Shared Password</strong> box. Otherwise leave it blank.</li>
-          <li>Click <strong>Save</strong>. You're done — drop a PDF on the home screen to test.</li>
+      <div class="form-group">
+        <label>Cloudflare Worker URL</label>
+        <input type="url" id="worker-url" placeholder="https://drybooks-scrubber.YOUR-NAME.workers.dev">
+      </div>
+      <div class="form-group">
+        <label>Shared Password (if set by admin)</label>
+        <input type="password" id="worker-password" placeholder="Ask your manager for this">
+      </div>
+      <div class="steps">
+        <strong style="font-size:.8rem;color:var(--text)">How to use the Shared Worker:</strong>
+        <ol>
+          <li>Ask your manager for the <strong>Worker URL</strong> and <strong>Shared Password</strong></li>
+          <li>Paste them into the fields above</li>
+          <li>Click <strong>Save</strong> — you're done. No API key needed.</li>
         </ol>
-        <div class="steps-note">
-          <strong>If you're the admin setting this up:</strong> See <code>cloudflare-worker.js</code> and the README in the repo. Briefly: create a free Cloudflare account, paste the Worker script, set your Gemini key as an encrypted variable named <code>GEMINI_API_KEY</code>, click Deploy, copy the URL, share it with your team. ~15 minutes one-time, $0/month.
-        </div>
       </div>
     </div>
 
-    <!-- Gemini step-by-step -->
-    <div class="provider-steps" id="steps-gemini">
-      <div class="steps-card">
-        <h3>How to get a free Gemini API key</h3>
-        <ol class="steps-list">
-          <li>Open <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com/app/apikey</a> in a new tab.</li>
-          <li>Sign in with any Google account (the one you use for Gmail is fine).</li>
-          <li>If prompted, accept the Google AI Studio terms of service.</li>
-          <li>Click the blue <strong>Create API key</strong> button on the right.</li>
-          <li>Choose <strong>Create API key in new project</strong> if asked (or pick any existing project).</li>
-          <li>Your key will appear — it starts with <code>AIza</code> and is about 39 characters long. Click the copy icon next to it.</li>
-          <li>Come back to this tab and paste it into the <strong>Your API Key</strong> box above.</li>
-          <li>Click <strong>Save</strong>. You're done — drop a PDF on the home screen to test it.</li>
+    <div id="byok-fields" style="display:none">
+      <div class="form-group">
+        <label>API Key</label>
+        <input type="password" id="api-key" placeholder="">
+      </div>
+      <div class="steps" id="byok-steps"></div>
+    </div>
+
+    <div id="no-ai-note" style="display:none">
+      <div class="steps">
+        <strong style="font-size:.8rem;color:var(--text)">Rules-only mode:</strong>
+        <ol>
+          <li>The scrubber will still check timestamps, equipment sizing, missing readings, and flag obvious problems</li>
+          <li>You will NOT get AI-written explanations, equipment recommendations, or S500-backed guidance</li>
+          <li>To enable AI, choose a provider above</li>
         </ol>
-        <div class="steps-note">
-          Free tier covers 1,500 scrubs per day. No credit card required. The key only works with Gemini — keep it secret like a password.
-        </div>
       </div>
     </div>
 
-    <!-- Anthropic step-by-step -->
-    <div class="provider-steps" id="steps-anthropic">
-      <div class="steps-card">
-        <h3>How to get an Anthropic Claude API key</h3>
-        <ol class="steps-list">
-          <li>Open <a href="https://console.anthropic.com/" target="_blank">console.anthropic.com</a> in a new tab.</li>
-          <li>Click <strong>Sign up</strong> (or sign in if you already have an account). New accounts get $5 in free credit.</li>
-          <li>Verify your email and phone number when prompted.</li>
-          <li>Once in the console, click <strong>Settings</strong> in the left sidebar, then <strong>API keys</strong>.</li>
-          <li>Click <strong>Create Key</strong>. Give it a name like <code>DryBooks Scrubber</code>.</li>
-          <li>Copy the key shown — it starts with <code>sk-ant-</code>. You won't be able to see it again, so copy it now.</li>
-          <li>Come back to this tab and paste it into the <strong>Your API Key</strong> box above.</li>
-          <li>Click <strong>Save</strong>.</li>
-        </ol>
-        <div class="steps-note">
-          $5 free credit ≈ 50 report scrubs. After that, expect $0.05–$0.20 per report. Quality is noticeably better than Gemini for nuanced narrative review.
-        </div>
-      </div>
-    </div>
-
-    <!-- OpenAI step-by-step -->
-    <div class="provider-steps" id="steps-openai">
-      <div class="steps-card">
-        <h3>How to get an OpenAI API key</h3>
-        <ol class="steps-list">
-          <li>Open <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com/api-keys</a> in a new tab.</li>
-          <li>Sign up or sign in. Note: OpenAI requires you to add a payment method before you can create keys.</li>
-          <li>Go to <strong>Billing</strong> in the left sidebar and add a payment method. You can set a hard spend cap (recommended: $5/month to start).</li>
-          <li>Back on the API keys page, click <strong>Create new secret key</strong>.</li>
-          <li>Give it a name like <code>DryBooks Scrubber</code> and click <strong>Create</strong>.</li>
-          <li>Copy the key shown — it starts with <code>sk-</code>. You can't see it again later.</li>
-          <li>Come back to this tab and paste it into the <strong>Your API Key</strong> box above.</li>
-          <li>Click <strong>Save</strong>.</li>
-        </ol>
-        <div class="steps-note">
-          Costs ~$0.05 per report scrub on GPT-4o-mini. Set a monthly spend cap in OpenAI's billing settings to avoid surprises.
-        </div>
-      </div>
-    </div>
-
-    <!-- No AI -->
-    <div class="provider-steps" id="steps-none">
-      <div class="steps-card">
-        <h3>Running without AI</h3>
-        <ol class="steps-list">
-          <li>You don't need to enter a key for this mode.</li>
-          <li>Click <strong>Save</strong> to confirm.</li>
-          <li>The scrubber will still run all hard rules — timestamps, dehu sizing, missed readings, fabrication signals, etc.</li>
-          <li>You lose the AI judgment layer: Class/Category recommendations, nuanced narrative review, and corrective-action suggestions.</li>
-        </ol>
-        <div class="steps-note">
-          Use this if you're testing the tool, working offline, or restricted from cloud AI services. You can switch back to a provider anytime.
-        </div>
-      </div>
-    </div>
-
-    <div class="actions">
-      <button class="secondary" id="settingsCancel">Cancel</button>
-      <button id="settingsSave">Save</button>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeSettings()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSettings()">Save</button>
     </div>
   </div>
 </div>
 
 <script>
+// ─── PDF.js Setup ────────────────────────────────────────────────────────────
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-// ============================================================
-// SETTINGS
-// ============================================================
-const SETTINGS_KEY = 'drybooks_scrubber_settings_v1';
-function loadSettings() {
-  try { return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || { provider: 'worker', apiKey: '', workerUrl: '', workerPassword: '' }; }
-  catch { return { provider: 'worker', apiKey: '', workerUrl: '', workerPassword: '' }; }
-}
-function saveSettings(s) { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); }
-
-const settingsModal = document.getElementById('settingsModal');
-
-function showProviderSteps(provider) {
-  document.querySelectorAll('.provider-steps').forEach(el => el.classList.remove('active'));
-  const target = document.getElementById('steps-' + provider);
-  if (target) target.classList.add('active');
-
-  // Toggle which form fields are visible
-  const workerFields = document.getElementById('worker-fields');
-  const keyFields = document.getElementById('key-fields');
-  if (provider === 'worker') {
-    workerFields.style.display = 'block';
-    keyFields.style.display = 'none';
-  } else if (provider === 'none') {
-    workerFields.style.display = 'none';
-    keyFields.style.display = 'none';
-  } else {
-    workerFields.style.display = 'none';
-    keyFields.style.display = 'block';
-  }
-
-  // Update placeholder hint for the API key field
-  const keyInput = document.getElementById('apiKey');
-  const hints = {
-    gemini: 'Paste your Gemini API key here (starts with AIza...)',
-    anthropic: 'Paste your Anthropic key here (starts with sk-ant-...)',
-    openai: 'Paste your OpenAI key here (starts with sk-...)'
-  };
-  keyInput.placeholder = hints[provider] || 'Paste your API key here';
-}
-
-document.getElementById('settingsBtn').onclick = () => {
+// ─── Settings ────────────────────────────────────────────────────────────────
+function openSettings() {
   const s = loadSettings();
-  document.getElementById('provider').value = s.provider;
-  document.getElementById('apiKey').value = s.apiKey || '';
-  document.getElementById('workerUrl').value = s.workerUrl || '';
-  document.getElementById('workerPassword').value = s.workerPassword || '';
-  showProviderSteps(s.provider);
-  settingsModal.classList.add('show');
-};
+  document.getElementById('provider-select').value = s.provider || 'worker';
+  document.getElementById('worker-url').value = s.workerUrl || '';
+  document.getElementById('worker-password').value = s.workerPassword || '';
+  document.getElementById('api-key').value = s.apiKey || '';
+  updateProviderUI();
+  document.getElementById('settings-modal').classList.add('open');
+}
+function closeSettings() { document.getElementById('settings-modal').classList.remove('open'); }
+function saveSettings() {
+  const p = document.getElementById('provider-select').value;
+  localStorage.setItem('db_settings', JSON.stringify({
+    provider: p,
+    workerUrl: document.getElementById('worker-url').value.trim(),
+    workerPassword: document.getElementById('worker-password').value,
+    apiKey: document.getElementById('api-key').value.trim()
+  }));
+  closeSettings();
+  alert('Settings saved.');
+}
+function loadSettings() {
+  try { return JSON.parse(localStorage.getItem('db_settings') || '{}'); } catch(e) { return {}; }
+}
+function updateProviderUI() {
+  const p = document.getElementById('provider-select').value;
+  document.getElementById('worker-fields').style.display  = p === 'worker' ? '' : 'none';
+  document.getElementById('byok-fields').style.display    = ['gemini','claude','openai'].includes(p) ? '' : 'none';
+  document.getElementById('no-ai-note').style.display     = p === 'none' ? '' : 'none';
+  const keyInput = document.getElementById('api-key');
+  const steps    = document.getElementById('byok-steps');
+  if (p === 'gemini') {
+    keyInput.placeholder = 'AIza...';
+    steps.innerHTML = `<strong style="font-size:.8rem;color:var(--text)">How to get a free Gemini key:</strong><ol>
+      <li>Go to <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com/app/apikey</a></li>
+      <li>Sign in with a Google account (free — no credit card needed)</li>
+      <li>Click <strong>"Create API key"</strong></li>
+      <li>Copy the key that starts with <strong>AIza</strong></li>
+      <li>Paste it into the field above and click <strong>Save</strong></li>
+      <li>Free tier: 1,500 report scrubs per day at no cost</li></ol>`;
+  } else if (p === 'claude') {
+    keyInput.placeholder = 'sk-ant-...';
+    steps.innerHTML = `<strong style="font-size:.8rem;color:var(--text)">How to get an Anthropic key:</strong><ol>
+      <li>Go to <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a></li>
+      <li>Create an account (you get $5 free credits — about 50 reports)</li>
+      <li>Go to <strong>API Keys</strong> and click <strong>"Create Key"</strong></li>
+      <li>Copy the key that starts with <strong>sk-ant-</strong></li>
+      <li>Paste it above and click <strong>Save</strong></li></ol>`;
+  } else if (p === 'openai') {
+    keyInput.placeholder = 'sk-...';
+    steps.innerHTML = `<strong style="font-size:.8rem;color:var(--text)">How to get an OpenAI key:</strong><ol>
+      <li>Go to <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com/api-keys</a></li>
+      <li>Create an account and add a payment method (required by OpenAI)</li>
+      <li>Set a spend cap of $5/month to avoid surprises</li>
+      <li>Click <strong>"Create new secret key"</strong></li>
+      <li>Copy the key starting with <strong>sk-</strong> and paste above</li></ol>`;
+  }
+}
 
-document.getElementById('provider').addEventListener('change', (e) => {
-  showProviderSteps(e.target.value);
-});
+// ─── Drag & Drop ─────────────────────────────────────────────────────────────
+const dz = document.getElementById('drop-zone');
+dz.addEventListener('click', () => document.getElementById('file-input').click());
+dz.addEventListener('dragover',  e => { e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag-over'); if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+function handleFileInput(e) { if(e.target.files[0]) handleFile(e.target.files[0]); }
 
-document.getElementById('settingsCancel').onclick = () => settingsModal.classList.remove('show');
-document.getElementById('settingsSave').onclick = () => {
-  saveSettings({
-    provider: document.getElementById('provider').value,
-    apiKey: document.getElementById('apiKey').value,
-    workerUrl: document.getElementById('workerUrl').value.trim().replace(/\/$/, ''),
-    workerPassword: document.getElementById('workerPassword').value
-  });
-  settingsModal.classList.remove('show');
-};
+// ─── Main File Handler ────────────────────────────────────────────────────────
+async function handleFile(file) {
+  if (!file.name.toLowerCase().endsWith('.pdf')) { alert('Please upload a PDF file.'); return; }
+  setProgress(5, 'Reading PDF…');
+  const text = await extractPdfText(file);
+  setProgress(30, 'Parsing report data…');
+  const report = parseReport(text);
+  setProgress(55, 'Running rules checks…');
+  const findings = runRules(report);
+  setProgress(75, 'Rendering results…');
+  renderResults(report, findings);
+  setProgress(90, 'Running AI analysis…');
+  await runAI(report, findings);
+  setProgress(100, 'Done.');
+  setTimeout(() => { document.getElementById('progress-bar').style.display='none'; document.getElementById('status-msg').style.display='none'; }, 1000);
+}
 
-// ============================================================
-// PDF TEXT EXTRACTION (layout-preserving)
-// ============================================================
-async function extractText(file) {
+function setProgress(pct, msg) {
+  document.getElementById('progress-bar').style.display = 'block';
+  document.getElementById('progress-fill').style.width  = pct + '%';
+  document.getElementById('status-msg').style.display   = 'block';
+  document.getElementById('status-msg').textContent     = msg;
+}
+
+// ─── PDF Text Extraction ──────────────────────────────────────────────────────
+async function extractPdfText(file) {
   const buf = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
-  const allLines = [];
+  let pages = [];
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i);
-    const content = await page.getTextContent();
-    const items = content.items.map(it => ({
-      str: it.str,
-      x: it.transform[4],
-      y: it.transform[5]
-    }));
-    // Sort by y descending, then x ascending
-    items.sort((a, b) => b.y - a.y || a.x - b.x);
-    let currentY = null;
-    let currentLine = [];
-    for (const it of items) {
-      if (currentY === null || Math.abs(it.y - currentY) < 3) {
-        currentLine.push(it);
-        currentY = currentY === null ? it.y : currentY;
-      } else {
-        currentLine.sort((a, b) => a.x - b.x);
-        allLines.push(currentLine.map(c => c.str).join(' ').trim());
-        currentLine = [it];
-        currentY = it.y;
-      }
-    }
-    if (currentLine.length) {
-      currentLine.sort((a, b) => a.x - b.x);
-      allLines.push(currentLine.map(c => c.str).join(' ').trim());
-    }
-    allLines.push(''); // page break
+    const tc   = await page.getTextContent();
+    const items = tc.items.sort((a,b) => {
+      const ay = Math.round(a.transform[5] / 5) * 5;
+      const by = Math.round(b.transform[5] / 5) * 5;
+      if (ay !== by) return by - ay;
+      return a.transform[4] - b.transform[4];
+    });
+    let rows = {}, lastY = null;
+    items.forEach(item => {
+      const y = Math.round(item.transform[5] / 4) * 4;
+      if (!rows[y]) rows[y] = [];
+      rows[y].push({ x: item.transform[4], text: item.str });
+    });
+    Object.values(rows).forEach(row => {
+      row.sort((a,b) => a.x - b.x);
+      pages.push(row.map(r => r.text).join('  '));
+    });
+    pages.push('');
   }
-  return allLines;
+  return pages.join('\n');
 }
 
-// ============================================================
-// FIELD PARSING
-// ============================================================
-function parseTimestamp(str) {
+// ─── Report Parser ────────────────────────────────────────────────────────────
+function parseReport(text) {
+  const lines = text.split('\n');
+  const get = (pattern, flags='i') => {
+    const m = text.match(new RegExp(pattern, flags));
+    return m ? m[1].trim() : null;
+  };
+
+  // Header info
+  const customerName    = get('Customer Name:\\s+([A-Z][A-Z ]+?)\\s{3,}');
+  const claimNumber     = get('Claim\\s*/\\s*PO Number:\\s+(\\S+)');
+  const projectNumber   = get('SERVPRO Project #:\\s+(\\S+)');
+  const insuranceClient = get('Insurance\\s*/\\s*Client:\\s+(.+?)\\s{3,}');
+  const causeOfLoss     = get('Cause of Loss:\\s+(.+?)(?:\\s{3,}|\\n)');
+  const categoryDoc     = get('Category of Water:\\s+(\\d)');
+  const classDoc        = get('Class of Water:\\s+(\\d)');
+  const daysToDry       = get('Days to Achieve Dry\\s*Standard:\\s*([\\d.]+)');
+  const totalAffectedSF = get('Total Affected SF:\\s+([\\d,.]+)');
+  const dryingZones     = get('Drying Zones:\\s+(\\d+)');
+  const affectedFloor   = get('Affected Flooring:\\s+(.+?)(?:\\s{3,}|\\n)');
+
+  // Timestamps
+  const lossReceived   = parseTS(get('Loss Received:\\s+([\\d/]+ [\\d:]+ [AP]M)'));
+  const custCalled     = parseTS(get('Customer Called:\\s+([\\d/]+ [\\d:]+ [AP]M)'));
+  const dateOfLoss     = parseTS(get('Date of Loss:\\s+([\\d/]+ [\\d:]+ [AP]M)'));
+  const siteInspected  = parseTS(get('Site Inspected:\\s+([\\d/]+ [\\d:]+ [AP]M)'));
+  const dryingComplete = parseTS(get('Drying Complete:\\s+([\\d/]+ [\\d:]+ [AP]M)'));
+
+  // Zone composition
+  const zones = parseZones(text);
+
+  // Atmospheric / Dehu / Material readings
+  const { atmosphericDays, dehuDays, materialDays, zoneAtmo, zoneDehu } = parseReadings(text);
+
+  // Diary notes
+  const diaryText = extractSection(text, 'Diary Notes', 'Zone Composition');
+  const narrativeText = extractSection(text, 'Daily Narrative', 'Diary Notes');
+
+  // Class override
+  const hasClassOverride = /Zone Water Class Override/i.test(text);
+
+  // Adjuster mentions
+  const adjusterMentions = (text.match(/adjuster/gi) || []).length;
+  const authMentions     = (text.match(/authoriz|approval|approved|auth request/gi) || []).length;
+  const adjusterEmails   = (diaryText || '').match(/Adjuster Update[\s\S]{0,500}/gi) || [];
+
+  // Equipment validation exceptions
+  const equipExceptions = (text.match(/Equipment Validation Exception/gi) || []).length;
+  const dehuExceeded    = (text.match(/Equipment Placement Exceeded \(Dehu\)/gi) || []).length;
+  const esNotifications = (text.match(/ES - Immediate Notification/gi) || []).length;
+  const emsExceeded     = /EMS Limit Exceeded/i.test(text);
+  const dryingDaysFlag  = /Client Notification.*Drying Days/i.test(text);
+
+  // Active source
+  const activeLeakText  = (text.match(/[Ll]eak is still active|[Ss]ource.*still active|[Ss]till.*leak/g) || []);
+  const activeLeak      = activeLeakText.length > 0;
+
+  // HVAC
+  const hvacOffDates = [...text.matchAll(/(\d+\/\d+\/\d+)[^\n]*HVAC turned off/gi)].map(m => m[1]);
+  const hvacOnNotes  = /HVAC.*on|turned.*HVAC.*on/gi.test(text);
+
+  // Demolition
+  const demoNeeded    = /Demolition Needed/i.test(text);
+  const demoPerformed = /Demolition Marked as Performed/i.test(text);
+
+  // Asbestos / Lead
+  const asbestosFlag = /[Aa]sbestos/i.test(text);
+  const leadFlag     = /[Ll]ead.*[Pp]aint|[Ll]ead.*[Tt]est/i.test(text);
+
+  // Power issues
+  const powerIssues = /[Pp]ower issue|[Bb]reaker|[Ss]pider box/i.test(text);
+
+  // Pre-cleaning for Cat 2/3
+  const antimicrobialMentioned = /antimicrobial|sanitiz|clean.*prior|pre.*clean/i.test(text);
+
+  // In-place drying flag
+  const inPlaceDryingFlag = /[Ii]n-place drying not performed/i.test(text);
+
+  return {
+    customerName, claimNumber, projectNumber, insuranceClient,
+    causeOfLoss, categoryDoc, classDoc, daysToDry, totalAffectedSF,
+    dryingZones, affectedFloor,
+    lossReceived, custCalled, dateOfLoss, siteInspected, dryingComplete,
+    zones, atmosphericDays, dehuDays, materialDays, zoneAtmo, zoneDehu,
+    diaryText, narrativeText, rawText: text,
+    hasClassOverride, adjusterMentions, authMentions, adjusterEmails,
+    equipExceptions, dehuExceeded, esNotifications, emsExceeded, dryingDaysFlag,
+    activeLeak, hvacOffDates, hvacOnNotes,
+    demoNeeded, demoPerformed, asbestosFlag, leadFlag, powerIssues,
+    antimicrobialMentioned, inPlaceDryingFlag
+  };
+}
+
+function parseTS(str) {
   if (!str) return null;
-  const m = str.match(/(\d{1,2}\/\d{1,2}\/\d{2,4})\s+(\d{1,2}:\d{2}\s*(?:AM|PM))/i);
-  if (!m) return null;
-  const dt = new Date(m[1] + ' ' + m[2]);
-  return isNaN(dt) ? null : dt;
+  const d = new Date(str);
+  return isNaN(d) ? null : d;
 }
 
-function findField(lines, label) {
-  // Stop the captured value at 2+ consecutive spaces (which separate columns)
-  const re = new RegExp('^\\s*' + label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ':?\\s+(.+?)(?:\\s{2,}|$)', 'i');
-  for (const ln of lines) {
-    const m = ln.match(re);
-    if (m) return m[1].trim();
-  }
-  return null;
+function diffMinutes(a, b) {
+  if (!a || !b) return null;
+  return Math.round((b - a) / 60000);
 }
 
-function findFieldsOnLine(lines, leftLabel, rightLabel) {
-  const re = new RegExp(leftLabel + ':?\\s*(.*?)\\s{2,}' + rightLabel + ':?\\s*(.+?)(?:\\s{2,}|$)', 'i');
-  for (const ln of lines) {
-    const m = ln.match(re);
-    if (m) return { left: m[1].trim(), right: m[2].trim() };
-  }
-  return { left: null, right: null };
+function extractSection(text, start, end) {
+  const si = text.indexOf(start);
+  if (si < 0) return '';
+  const ei = end ? text.indexOf(end, si) : text.length;
+  return text.slice(si, ei > si ? ei : text.length);
 }
 
-// Days to Achieve Dry Standard appears in 2 layouts:
-//  (a) value on next line under the label (multi-line)
-//  (b) value inline right after the label (single-line)
-function findDaysToDry(lines) {
-  for (let i = 0; i < lines.length; i++) {
-    if (/Days to Achieve Dry/i.test(lines[i])) {
-      // (b) inline value — only match if the number comes BEFORE any other label
-      const before = lines[i].split(/Total Affected SF/i)[0];
-      const inline = before.match(/Days to Achieve Dry\s+([\d.]+)(?:\s|$)/i);
-      if (inline) return parseFloat(inline[1]);
-      // (a) next-line value
-      for (let j = i + 1; j < Math.min(i + 4, lines.length); j++) {
-        const m = lines[j].match(/^\s*([\d.]+)\s*$/);
-        if (m) return parseFloat(m[1]);
-      }
-    }
-  }
-  return null;
-}
-
-// Total Affected SF appears mid-line, so search anywhere on the line.
-function findTotalAffectedSF(lines) {
-  for (const ln of lines) {
-    const m = ln.match(/Total Affected SF:?\s+([\d.,]+)/i);
-    if (m) return parseFloat(m[1].replace(/,/g, ''));
-  }
-  return null;
-}
-
-function parseReport(lines) {
-  const r = {};
-  // Customer / job info
-  r.customerName = findField(lines, 'Customer Name');
-  r.claimNumber = findField(lines, 'Claim / PO Number');
-  r.projectNumber = findField(lines, 'SERVPRO Project #');
-  // Timestamps — these come in pairs on the same line
-  const ts1 = findFieldsOnLine(lines, 'Loss Received', 'Customer Called');
-  r.lossReceived = parseTimestamp(ts1.left);
-  r.customerCalled = parseTimestamp(ts1.right);
-  const ts2 = findFieldsOnLine(lines, 'Date of Loss', 'Site Inspected');
-  r.dateOfLoss = parseTimestamp(ts2.left);
-  r.siteInspected = parseTimestamp(ts2.right);
-  r.dryingComplete = parseTimestamp(findField(lines, 'Drying Complete'));
-  // Additional loss info
-  const cat = findFieldsOnLine(lines, 'Category of Water', 'Class of Water');
-  r.category = parseInt(cat.left) || null;
-  r.class = parseInt(cat.right) || null;
-  r.daysToDry = findDaysToDry(lines);
-  r.totalAffectedSF = findTotalAffectedSF(lines);
-  r.dryingZones = parseInt(findField(lines, 'Drying Zones')) || null;
-  // Loss info
-  r.typeOfLoss = findField(lines, 'Type of Loss');
-  r.causeOfLoss = findField(lines, 'Cause of Loss');
-  r.structureType = findField(lines, 'Structure Type');
-
-  // Zones — parse Zone Composition and Validation
-  r.zones = parseZones(lines);
-  // Atmospherics + Dehu (tracked together, split below)
-  const atm = parseAtmospherics(lines);
-  r.atmospherics = atm.readings;
-  r.missedReadingDays = atm.missedDays;
-  // Split missed days by mode (atmospheric vs dehu) and by zone
-  r.missedAtmosphericDays = atm.missedDays.filter(m => m.mode === 'atmospheric');
-  r.missedDehuDays = atm.missedDays.filter(m => m.mode === 'dehu');
-  // Material readings — returns readings + estimated coverage gap + material types
-  const mat = parseMaterialReadings(lines);
-  r.materialReadings = mat.readings;
-  r.materialTypes = mat.materialTypes;
-  r.materialDateColumns = mat.dateColumns;
-  r.materialTotalDateColumns = mat.totalDateColumns;
-  r.materialBestRowReadings = mat.bestRowReadingCount;
-  r.materialEstimatedMissedDays = mat.estimatedMissedDays;
-  r.class4Candidates = detectClass4Materials(mat.materialTypes);
-  // Narrative
-  r.narrative = parseNarrative(lines);
-  // Equipment timeline
-  r.equipmentRange = parseEquipmentRange(lines);
-
-  return r;
-}
-
-function parseZones(lines) {
+function parseZones(text) {
   const zones = [];
-  let current = null;
-  for (let i = 0; i < lines.length; i++) {
-    const ln = lines[i];
-    const zm = ln.match(/^Zone\s+(\d+)\s*$/);
-    if (zm) {
-      if (current) zones.push(current);
-      current = { number: parseInt(zm[1]), rooms: [] };
-      continue;
-    }
-    if (!current) continue;
-    // Stop if we hit a new top-level section
-    if (ln.match(/^Zone Equipment Usage|^Drawings|^Monitoring/)) {
-      if (current) { zones.push(current); current = null; }
-      continue;
-    }
-    const dehuMin = ln.match(/Dehu Min Capacity Required:\s*(\d+)\s*PPD/i);
-    if (dehuMin) current.dehuMinPPD = parseInt(dehuMin[1]);
-    const dehuActual = ln.match(/Dehu Actual Capacity Placed:\s*(\d+)\s*PPD/i);
-    if (dehuActual) current.dehuActualPPD = parseInt(dehuActual[1]);
-    const dehuPlaced = ln.match(/Dehumidifiers Placed:\s*(\d+)/i);
-    if (dehuPlaced) current.dehumidifiersPlaced = parseInt(dehuPlaced[1]);
-    const amReq = ln.match(/Air Movers Required:\s*([\d\s\-]+)/i);
-    if (amReq) current.airMoversRequired = amReq[1].trim();
-    const amPlaced = ln.match(/Air Movers Placed:\s*(\d+)/i);
-    if (amPlaced) current.airMoversPlaced = parseInt(amPlaced[1]);
-    // Room affected % lines: e.g. "Main Level Garage  30 % 0% 5% 100 %"
-    const roomPct = ln.match(/^([A-Z][A-Za-z0-9 \/\-]+?)\s+(\d+)\s*%\s+(\d+)\s*%\s+(\d+)\s*%\s+(\d+)\s*%/);
-    if (roomPct && !ln.includes('Total')) {
-      current.rooms.push({
-        name: roomPct[1].trim(),
-        totalPct: parseInt(roomPct[2]),
-        floorPct: parseInt(roomPct[3]),
-        wallPct: parseInt(roomPct[4]),
-        ceilingPct: parseInt(roomPct[5])
-      });
-    }
+  const zoneBlocks = [...text.matchAll(/Zone\s+(\d+)\s*\n[\s\S]{0,2000}?(?=Zone\s+\d+\s*\n|Monitoring|$)/gi)];
+
+  // Use a simpler approach: find each zone's key numbers
+  const catMatches  = [...text.matchAll(/Water Category:\s+(\d)/gi)];
+  const classMatches= [...text.matchAll(/Water Class:\s+(\d)/gi)];
+  const dehuMinM    = [...text.matchAll(/Dehu Min Capacity Required:\s+([\d.]+)\s*PPD/gi)];
+  const dehuActM    = [...text.matchAll(/Dehu Actual Capacity Placed:\s+([\d.]+)\s*PPD/gi)];
+  const dehuPlacM   = [...text.matchAll(/Dehumidifiers Placed:\s+(\d+)/gi)];
+  const amReqM      = [...text.matchAll(/Air Movers Required:\s+([\d\s\-]+)/gi)];
+  const amPlacM     = [...text.matchAll(/Air Movers Placed:\s+(\d+)/gi)];
+  const totalPctM   = [...text.matchAll(/Total\s+([\d]+)\s*%\s+(\d+)\s*%\s+(\d+)\s*%\s+(\d+)\s*%/g)];
+
+  const count = Math.max(catMatches.length, dehuMinM.length);
+  for (let i = 0; i < count; i++) {
+    const dehuMin = dehuMinM[i] ? parseFloat(dehuMinM[i][1]) : null;
+    const dehuAct = dehuActM[i] ? parseFloat(dehuActM[i][1]) : null;
+    const amReqRaw= amReqM[i]   ? amReqM[i][1].trim() : null;
+    const amReqNums = amReqRaw ? amReqRaw.match(/\d+/g).map(Number) : null;
+    const amReqMin  = amReqNums ? Math.min(...amReqNums) : null;
+    const amReqMax  = amReqNums ? Math.max(...amReqNums) : null;
+    const amPlaced  = amPlacM[i]  ? parseInt(amPlacM[i][1]) : null;
+    const pctTotal  = totalPctM[i] ? parseInt(totalPctM[i][1]) : null;
+
+    zones.push({
+      zoneNum:  i + 1,
+      category: catMatches[i]  ? parseInt(catMatches[i][1])  : null,
+      waterClass:classMatches[i]? parseInt(classMatches[i][1]) : null,
+      dehuMin, dehuAct,
+      dehuPlaced: dehuPlacM[i] ? parseInt(dehuPlacM[i][1]) : null,
+      amReqRaw, amReqMin, amReqMax, amPlaced,
+      affectedPct: pctTotal
+    });
   }
-  if (current) zones.push(current);
   return zones;
 }
 
-function parseAtmospherics(lines) {
-  // PDF layout: timestamp on one line, readings on the next, "Tech:" on the third.
-  // If the line after a timestamp is "Tech:" (no readings), that's a MISSED reading day.
-  const readings = [];
-  const missedDays = [];
-  let inSection = false;
-  let currentZone = null;
-  let mode = null; // 'atmospheric' or 'dehu'
-  const isTimestampLine = ln => /^\s*\d{1,2}\/\d{1,2}\/\d{2,4}\s+\d{1,2}:\d{2}\s*(?:AM|PM)\s*$/i.test(ln);
-  for (let i = 0; i < lines.length; i++) {
-    const ln = lines[i];
-    if (ln.match(/Atmospheric\s*&\s*Dehumidifier Readings/i)) { inSection = true; mode = 'atmospheric'; continue; }
-    if (!inSection) continue;
-    if (ln.match(/Moisture Content Readings/i)) { inSection = false; continue; }
-    const zm = ln.match(/^\s*Zone\s+(\d+)\s*$/);
-    if (zm) { currentZone = parseInt(zm[1]); mode = 'atmospheric'; continue; }
-    // Mode detection — reliable single-line cues from column headers:
-    //   "GDEP" appears ONLY in the dehu section
-    //   "Outside ... Unaffected" or "Atmospheric Readings" identify atmospheric
-    if (/\bGDEP\b/i.test(ln)) { mode = 'dehu'; continue; }
-    if (/\bOutside\b.*\bUnaffected\b/i.test(ln) || /Atmospheric\s*Readings/i.test(ln)) { mode = 'atmospheric'; continue; }
-    if (!isTimestampLine(ln)) continue;
-    const ts = parseTimestamp(ln.trim());
-    // Look at next 1-3 lines for the readings row
-    let readingLine = null;
-    for (let j = i + 1; j < Math.min(i + 4, lines.length); j++) {
-      const next = lines[j].trim();
-      if (next === '' || /^Tech:/i.test(next)) continue;
-      // Stop if we hit another timestamp
-      if (isTimestampLine(next)) break;
-      readingLine = next; break;
-    }
-    if (!readingLine) {
-      missedDays.push({ zone: currentZone, timestamp: ts, mode });
-      continue;
-    }
-    const nums = (readingLine.match(/-?[\d.]+/g) || []).map(Number);
-    if (mode === 'dehu' && nums.length >= 5) {
-      readings.push({
-        zone: currentZone, timestamp: ts,
-        dehu: { temp: nums[0], rh: nums[1], gpp: nums[2], gdep: nums[3], hrs: nums[4] }
-      });
-    } else if (mode === 'atmospheric' && nums.length >= 9) {
-      // Last 3 nums = affected zone (Zone N column); first 3 = Outside; next 3 = Unaffected
-      readings.push({
-        zone: currentZone, timestamp: ts,
-        outside:    { temp: nums[0], rh: nums[1], gpp: nums[2] },
-        unaffected: { temp: nums[3], rh: nums[4], gpp: nums[5] },
-        affected:   { temp: nums[nums.length-3], rh: nums[nums.length-2], gpp: nums[nums.length-1] }
-      });
-    } else if (mode === 'atmospheric' && nums.length >= 6) {
-      // No HVAC column case
-      readings.push({
-        zone: currentZone, timestamp: ts,
-        outside:    { temp: nums[0], rh: nums[1], gpp: nums[2] },
-        unaffected: { temp: nums[3], rh: nums[4], gpp: nums[5] },
-        affected:   { temp: nums[nums.length-3], rh: nums[nums.length-2], gpp: nums[nums.length-1] }
-      });
-    }
-  }
-  return { readings, missedDays };
-}
+function parseReadings(text) {
+  // Extract all dated reading lines
+  const datePattern = /(\d{1,2}\/\d{1,2}\/\d{4})\s+\d{1,2}:\d{2}/g;
 
-function parseMaterialReadings(lines) {
-  // The Moisture Content Readings section is a matrix: rows = materials, columns = dates.
-  // Approach:
-  //  - Skip footer lines (they contain "Drying Report" and the report-generation date).
-  //  - Only treat a line as a date-column header if it has 2+ MM/DD tokens AND no material name.
-  //  - For each material row, capture values; the per-row "coverage" is values.length / total date columns.
-  const readings = [];
-  const materialTypes = new Set();
-  const dateColumns = new Set();
-  let inSection = false;
-  let maxValuesAnyRow = 0;
-  for (let i = 0; i < lines.length; i++) {
-    const ln = lines[i];
-    if (/^Moisture Content Readings/i.test(ln)) { inSection = true; continue; }
-    if (!inSection) continue;
-    if (/^Drawings|^Zone Composition|^Page\s+\d+/i.test(ln)) { inSection = false; continue; }
-    if (/Drying Report/i.test(ln)) continue; // footer date noise
-    // Identify date-column header lines: 2+ MM/DD tokens, no material/category words.
-    const datesOnLine = ln.match(/\b\d{1,2}\/\d{1,2}\b/g) || [];
-    const looksLikeMaterialRow = /\b(Pts|%)\b/.test(ln);
-    if (datesOnLine.length >= 2 && !looksLikeMaterialRow) {
-      datesOnLine.forEach(d => dateColumns.add(d));
+  // Atmospheric: find section blocks
+  const atmoSection  = extractSection(text, 'Atmospheric & Dehumidifier Readings', 'Moisture Content Readings');
+  const matSection   = extractSection(text, 'Moisture Content Readings', 'Zone Equipment Usage');
+
+  // Extract dates that have actual temperature readings (non-midnight, non-blank)
+  const atmoWithData     = new Set();
+  const atmoWithoutData  = new Set();
+  const dehuWithData     = new Set();
+  const dehuWithoutData  = new Set();
+  const matWithData      = new Set();
+  const matWithoutData   = new Set();
+
+  // Parse atmospheric section for dates with/without readings
+  const atmoLines = atmoSection.split('\n');
+  let lastDate = null;
+  let foundData = false;
+  for (const line of atmoLines) {
+    const dm = line.match(/(\d{2}\/\d{2}\/\d{4})/);
+    if (dm) {
+      if (lastDate) { foundData ? atmoWithData.add(lastDate) : atmoWithoutData.add(lastDate); }
+      lastDate = dm[1]; foundData = false;
     }
-    // Material reading row: "Material - SubName  Pts  Goal  val1 val2 ..."
-    const rowMatch = ln.match(/^([A-Za-z][\w \/\-]+?)\s+(Pts|%)\s+(\d+)\s+(.*)$/);
-    if (rowMatch) {
-      const materialName = rowMatch[1].trim();
-      materialTypes.add(materialName.toLowerCase());
-      const nums = (rowMatch[4].match(/[\d.]+/g) || []).map(Number);
-      if (nums.length >= 1) {
-        readings.push({ location: materialName, unit: rowMatch[2], goal: parseInt(rowMatch[3]), values: nums, raw: ln });
-        if (nums.length > maxValuesAnyRow) maxValuesAnyRow = nums.length;
-      }
-    }
+    if (lastDate && /\d+\.\d+/.test(line) && /Temp|^\s+\d{2,3}/.test(line)) foundData = true;
+    if (lastDate && /Tech:/.test(line) && !/Tech:\s*$/.test(line)) foundData = true;
   }
-  // Honest gap estimate: number of date columns minus the maximum readings any single row carried.
-  // This is the floor on missed days (the best-monitored row tells us how many days were actually checked).
-  const totalColumns = dateColumns.size;
-  const estimatedMissedDays = Math.max(0, totalColumns - maxValuesAnyRow);
+  if (lastDate) { foundData ? atmoWithData.add(lastDate) : atmoWithoutData.add(lastDate); }
+
+  // Extract all dates from readings section
+  const allReadingDates = new Set();
+  const dehuSection = atmoSection; // dehu is in same section
+  [...dehuSection.matchAll(/(\d{2}\/\d{2}\/\d{4})/g)].forEach(m => allReadingDates.add(m[1]));
+
+  // Material dates
+  const matDates = new Set();
+  [...text.matchAll(/(\d{2}\/\d{1,2}\/\d{4})\s+\d+:\d{2}\s+(?:AM|PM)/gi)].forEach(m => matDates.add(m[1]));
+
+  // Simpler: just find unique dates in each section and count
+  const atmoDateArr  = [...allReadingDates].sort();
+  const dehuDates    = [...allReadingDates].sort();
+
+  // Find missing consecutive days (gaps > 24h between documented dates)
+  const gaps = findDateGaps(atmoDateArr);
+
+  // GDEP analysis
+  const gdepValues = [...text.matchAll(/GDEP\s+Hrs[\s\S]*?(\d+\/\d+\/\d{4}[\s\S]*?)(?=\d+\/\d+\/\d{4}|Moisture Content|$)/gi)];
+
+  // Extract all GDEP readings
+  const gdepReadings = [];
+  const gdepMatches = [...text.matchAll(/(\d+\/\d+\/\d{4})[^\n]*\n[^\n]*?(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+)\s+([-\d]+)\s+(\d+)/g)];
+  gdepMatches.forEach(m => {
+    const gdepVal = parseInt(m[5]);
+    if (!isNaN(gdepVal)) gdepReadings.push({ date: m[1], gdep: gdepVal });
+  });
+
+  // Hour counter readings
+  const hourCounters = [];
+  const hcMatches = [...text.matchAll(/(\d+\/\d+\/\d{4})[^\n]*(?:PM|AM)[^\n]*?\s+([\d]+)\s*$/mg)];
+
   return {
-    readings,
-    materialTypes: [...materialTypes],
-    dateColumns: [...dateColumns],
-    totalDateColumns: totalColumns,
-    bestRowReadingCount: maxValuesAnyRow,
-    estimatedMissedDays
+    atmosphericDays: atmoDateArr,
+    dehuDays: dehuDates,
+    materialDays: [...matDates],
+    gaps,
+    gdepReadings,
+    zoneAtmo: {},
+    zoneDehu: {}
   };
 }
 
-// Detect Class 4 candidate materials (low evaporation per S500) from material readings.
-function detectClass4Materials(materialTypes) {
-  const class4Patterns = [
-    /plaster/i, /\bwood\b|hardwood|engineered|subfloor|framing|stud/i,
-    /concrete|masonry|cmu/i, /multi.?layer/i, /built.?up/i
-  ];
-  return materialTypes.filter(m => class4Patterns.some(re => re.test(m)));
-}
-
-function parseNarrative(lines) {
-  const entries = [];
-  let inSection = false;
-  let currentEntry = null;
-  for (const ln of lines) {
-    if (ln.match(/^Daily Narrative/i)) { inSection = true; continue; }
-    if (!inSection) continue;
-    if (ln.match(/^Zone Composition|^Equipment Usage|^Diary Notes$|^Drawings/i) && !currentEntry) { inSection = false; continue; }
-    const ts = ln.match(/^(\d{1,2}\/\d{1,2}\/\d{2,4}\s+\d{1,2}:\d{2}\s*(?:AM|PM)(?:\s+\w+)?)\s+(.*)$/i);
-    if (ts) {
-      if (currentEntry) entries.push(currentEntry);
-      currentEntry = { timestamp: parseTimestamp(ts[1]), text: ts[2] };
-    } else if (currentEntry) {
-      currentEntry.text += ' ' + ln;
+function findDateGaps(dates) {
+  if (!dates || dates.length < 2) return [];
+  const gaps = [];
+  const sorted = dates.map(d => new Date(d)).filter(d => !isNaN(d)).sort((a,b) => a-b);
+  for (let i = 1; i < sorted.length; i++) {
+    const diff = (sorted[i] - sorted[i-1]) / 86400000;
+    if (diff > 1.5) {
+      gaps.push({
+        from: sorted[i-1].toLocaleDateString('en-US',{month:'numeric',day:'numeric',year:'numeric'}),
+        to:   sorted[i].toLocaleDateString('en-US',{month:'numeric',day:'numeric',year:'numeric'}),
+        days: Math.round(diff)
+      });
     }
   }
-  if (currentEntry) entries.push(currentEntry);
-  return entries;
+  return gaps;
 }
 
-function parseEquipmentRange(lines) {
-  let firstPlaced = null, lastRemoved = null;
-  for (const ln of lines) {
-    const m = ln.match(/(\d{1,2}\/\d{1,2}\/\d{2,4}\s+\d{1,2}:\d{2}\s*(?:AM|PM))\s+(\d{1,2}\/\d{1,2}\/\d{2,4}\s+\d{1,2}:\d{2}\s*(?:AM|PM))/i);
-    if (m) {
-      const placed = parseTimestamp(m[1]);
-      const removed = parseTimestamp(m[2]);
-      if (placed && (!firstPlaced || placed < firstPlaced)) firstPlaced = placed;
-      if (removed && (!lastRemoved || removed > lastRemoved)) lastRemoved = removed;
-    }
-  }
-  return { firstPlaced, lastRemoved };
-}
-
-// ============================================================
-// RULES ENGINE
-// ============================================================
-const SEV = { CRITICAL: 'critical', HIGH: 'high', MEDIUM: 'medium', LOW: 'low' };
-
-function hoursBetween(a, b) {
-  if (!a || !b) return null;
-  return (b - a) / (1000 * 60 * 60);
-}
-function fmt(d) { return d ? d.toLocaleString() : 'missing'; }
-
+// ─── Rules Engine ─────────────────────────────────────────────────────────────
 function runRules(r) {
-  const f = [];
-  const add = (severity, rule, title, message, evidence) =>
-    f.push({ severity, rule, title, message, evidence });
+  const findings = [];
 
-  // R-001: Customer contact within 1 hour
-  if (r.lossReceived && r.customerCalled) {
-    const h = hoursBetween(r.lossReceived, r.customerCalled);
-    if (h < 0) {
-      add(SEV.CRITICAL, 'R-001b', 'Customer Called BEFORE Loss Received',
-        'Customer Called timestamp is earlier than Loss Received. This is a data integrity issue carriers will challenge.',
-        `Loss Received: ${fmt(r.lossReceived)}\nCustomer Called: ${fmt(r.customerCalled)}`);
-    } else if (h > 1) {
-      add(SEV.HIGH, 'R-001', 'Customer contact exceeded 1 hour SLA',
-        `Customer was not called within 1 hour of loss received. Actual: ${h.toFixed(1)} hours.`,
-        `Loss Received: ${fmt(r.lossReceived)}\nCustomer Called: ${fmt(r.customerCalled)}`);
-    }
+  function add(severity, title, what, why, action, s500ref) {
+    findings.push({ severity, title, what, why, action, s500ref: s500ref || null });
+  }
+
+  // ── R-001: Customer Contact Within 1 Hour ─────────────────────────────────
+  const contactMin = diffMinutes(r.lossReceived, r.custCalled);
+  if (contactMin === null) {
+    add('medium','Customer Contact Time — Cannot Verify',
+      'The "Customer Called" or "Loss Received" timestamp is missing or unreadable.',
+      'SERVPRO requires the customer to be contacted within 1 hour of receiving the loss. Without a timestamp, this cannot be confirmed.',
+      'Make sure both "Loss Received" and "Customer Called" times are entered correctly in DryBooks before closing the job.',
+      'IICRC S500 Section 7 — Initial Response');
+  } else if (contactMin < 0) {
+    add('critical','Customer Called BEFORE Loss Was Received — Impossible Timestamp',
+      `Customer Called shows ${r.custCalled ? r.custCalled.toLocaleString() : 'unknown'} but Loss Received shows ${r.lossReceived ? r.lossReceived.toLocaleString() : 'unknown'}. The customer was supposedly called ${Math.abs(contactMin)} minutes before the job was even in the system.`,
+      'This timestamp sequence is impossible. It means there is a data entry error. Insurance carriers and auditors will flag this immediately as a sign of poor record-keeping or data manipulation. It can be used to challenge the entire report.',
+      'Correct the "Loss Received" date in DryBooks. The Loss Received date should be the moment the job came into your system. The Customer Called date should be after that.',
+      null);
+  } else if (contactMin > 60) {
+    add('high', `Customer Contact Late — ${contactMin} Minutes After Loss Received`,
+      `Loss Received: ${r.lossReceived.toLocaleString()}\nCustomer Called: ${r.custCalled.toLocaleString()}\nTime gap: ${contactMin} minutes`,
+      'The standard requires the customer to be contacted within 60 minutes of the loss being received. Going over this window means a delayed response is documented in the report.',
+      'The tech or office staff should call the customer immediately when a new job comes in — within the hour. If there was a reason for the delay (customer unavailable, after-hours call back), document that reason in the diary notes.',
+      'IICRC S500 Section 7.1 — Initial Contact');
   } else {
-    add(SEV.MEDIUM, 'R-001m', 'Missing customer contact timestamps',
-      'Loss Received or Customer Called timestamp is missing — cannot verify 1-hour contact SLA.',
-      `Loss Received: ${fmt(r.lossReceived)}\nCustomer Called: ${fmt(r.customerCalled)}`);
+    add('pass', `✓ Customer Contact — ${contactMin} min (within 1 hour)`, `Contact made ${contactMin} minutes after loss received.`, null, null);
   }
 
-  // R-002: Site inspected within 4 hours
-  if (r.lossReceived && r.siteInspected) {
-    const h = hoursBetween(r.lossReceived, r.siteInspected);
-    if (h > 4) {
-      add(SEV.HIGH, 'R-002', 'Site inspection exceeded 4-hour SLA',
-        `Site was not inspected within 4 hours of loss received. Actual: ${h.toFixed(1)} hours.`,
-        `Loss Received: ${fmt(r.lossReceived)}\nSite Inspected: ${fmt(r.siteInspected)}`);
-    }
+  // ── R-002: Site Inspection Within 4 Hours ────────────────────────────────
+  const siteMin = diffMinutes(r.lossReceived, r.siteInspected);
+  if (siteMin === null) {
+    add('medium','Site Inspection Time — Cannot Verify',
+      'The "Site Inspected" timestamp is missing.',
+      'SERVPRO requires the site to be inspected within 4 hours of receiving the loss.',
+      'Make sure the "Site Inspected" timestamp is entered in DryBooks when the tech arrives on site.',
+      null);
+  } else if (siteMin > 240) {
+    const hrs = (siteMin/60).toFixed(1);
+    add('high', `Site Inspection Late — ${hrs} Hours (Limit: 4 Hours)`,
+      `Loss Received: ${r.lossReceived.toLocaleString()}\nSite Inspected: ${r.siteInspected.toLocaleString()}\nActual time to site: ${hrs} hours`,
+      'The 4-hour inspection window exists to show the carrier that SERVPRO responded quickly. Going over this window — even by a few minutes — gives carriers a reason to question the urgency of the response and potentially reduce payment.',
+      `Document the reason for the delay in the diary notes. For example: "Tech had to travel from a previous job site." If the delay was unavoidable, put that explanation in writing right away.`,
+      'IICRC S500 Section 7.1 — Emergency Response');
+  } else {
+    add('pass', `✓ Site Inspection — ${(siteMin/60).toFixed(1)} hrs (within 4 hours)`, `Site inspected ${(siteMin/60).toFixed(1)} hours after loss received.`, null, null);
   }
 
-  // R-003: Days to achieve dry standard (5-7 days)
-  if (r.daysToDry !== null) {
-    if (r.daysToDry > 7) {
-      const auths = (r.narrative || []).filter(n => /drying days|extended|exceed|approved.*extension|approval.*dry/i.test(n.text)).length;
-      const sev = auths > 0 ? SEV.HIGH : SEV.CRITICAL;
-      add(sev, 'R-003', `Extended drying: ${r.daysToDry.toFixed(2)} days (>7)`,
-        auths > 0
-          ? `Drying took ${r.daysToDry.toFixed(2)} days. Narrative shows ${auths} entries referencing extended drying — verify adjuster authorization is documented and dated.`
-          : `Drying took ${r.daysToDry.toFixed(2)} days with NO narrative entries documenting adjuster authorization for extension. CARRIER WILL CHARGEBACK.`,
-        `Days to Achieve Dry Standard: ${r.daysToDry}\nWindow: 5-7 days`);
-    } else if (r.daysToDry < 5) {
-      add(SEV.LOW, 'R-003b', `Drying completed in under 5 days (${r.daysToDry.toFixed(2)})`,
-        'Drying completed faster than the typical 5-day floor. Verify final moisture readings confirmed dry standard achievement.',
-        `Days to Achieve Dry Standard: ${r.daysToDry}`);
-    }
+  // ── R-003: Date of Loss vs Loss Received Gap ─────────────────────────────
+  const dolGap = diffMinutes(r.dateOfLoss, r.lossReceived);
+  if (dolGap !== null && dolGap > 1440) {
+    const days = Math.round(dolGap / 1440);
+    add('medium', `Date of Loss to Loss Received — ${days}-Day Gap`,
+      `Date of Loss: ${r.dateOfLoss.toLocaleString()}\nLoss Received in System: ${r.lossReceived.toLocaleString()}\nGap: ${days} days`,
+      `Water damage that sits for ${days} days before mitigation begins can cause significantly more damage than immediate response. Carriers may use this gap to argue that secondary damage was preventable or to question the accuracy of the timestamps. A ${days}-day gap also raises questions about Category — water that sits for 48+ hours can be upgraded from Category 1 to Category 2 due to potential bacterial growth.`,
+      `Add a diary note explaining the gap. For example, was the homeowner out of town? Was there a dispute about insurance coverage before the job started? Was the "Date of Loss" estimated? Each of these is a valid reason — but it must be documented.`,
+      'IICRC S500 Section 6.4 — Secondary Damage');
+  } else if (dolGap === null && r.dateOfLoss === null) {
+    add('medium','Date of Loss Missing', 'No Date of Loss is recorded.', 'The Date of Loss establishes when the water event occurred. Without it, the timeline of the loss cannot be verified.', 'Enter the Date of Loss in DryBooks.', null);
   }
 
-  // R-004: Loss Received vs Date of Loss
-  if (r.dateOfLoss && r.lossReceived) {
-    const h = hoursBetween(r.dateOfLoss, r.lossReceived);
-    if (h < 0) {
-      add(SEV.CRITICAL, 'R-004', 'Loss Received is BEFORE Date of Loss',
-        'Timeline impossible: you received the loss report before the loss occurred.',
-        `Date of Loss: ${fmt(r.dateOfLoss)}\nLoss Received: ${fmt(r.lossReceived)}`);
-    } else if (h > 48) {
-      add(SEV.MEDIUM, 'R-004b', `Loss reported ${(h/24).toFixed(1)} days after occurrence`,
-        'Loss reported more than 48 hours after Date of Loss. Document carrier/customer reason for late notification to protect the file.',
-        `Date of Loss: ${fmt(r.dateOfLoss)}\nLoss Received: ${fmt(r.lossReceived)}`);
-    }
+  // ── R-004: Equipment Before Loss Received ───────────────────────────────
+  if (r.siteInspected && r.lossReceived && r.siteInspected < r.lossReceived) {
+    add('critical', 'Equipment Placed BEFORE Loss Was Received in System',
+      `Site Inspected / Equipment Placed: ${r.siteInspected.toLocaleString()}\nLoss Received in System: ${r.lossReceived.toLocaleString()}`,
+      'The DryBooks record shows equipment running on the job before the job was ever entered into the system. This tells a carrier that either the timestamps are wrong, or a job was running "off the books." This is one of the most damaging findings in a billing audit.',
+      'Correct the "Loss Received" date so it matches when the job actually entered your system. If the job started as cash-pay and then converted to insurance, document that transition clearly in the diary notes with the date the claim was filed.',
+      null);
   }
 
-  // R-005: Equipment timeline consistency
-  if (r.equipmentRange.firstPlaced && r.siteInspected) {
-    const h = hoursBetween(r.siteInspected, r.equipmentRange.firstPlaced);
-    if (h < -1) {
-      add(SEV.CRITICAL, 'R-005', 'Equipment placed BEFORE site was inspected',
-        'Equipment placement timestamp predates site inspection — physically impossible unless data was entered out of order. Carrier will dismiss.',
-        `Site Inspected: ${fmt(r.siteInspected)}\nFirst equipment placed: ${fmt(r.equipmentRange.firstPlaced)}`);
-    }
-  }
-  if (r.equipmentRange.firstPlaced && r.lossReceived) {
-    const h = hoursBetween(r.lossReceived, r.equipmentRange.firstPlaced);
-    if (h < -1) {
-      add(SEV.CRITICAL, 'R-005b', 'Equipment placed BEFORE loss was received',
-        'Equipment placement timestamp predates loss received — documentation contradicts itself. Backdating or forward-dating likely.',
-        `Loss Received: ${fmt(r.lossReceived)}\nFirst equipment placed: ${fmt(r.equipmentRange.firstPlaced)}`);
-    }
+  // ── R-005: Drying Complete Not Entered ──────────────────────────────────
+  if (!r.dryingComplete && !r.daysToDry) {
+    add('medium', 'Drying Complete Date Not Entered',
+      'The "Drying Complete" field is blank and "Days to Achieve Dry Standard" is not recorded.',
+      'An open job without a drying completion date looks unfinished. Carriers may delay payment on jobs that appear to still be in progress. It also means the job is not closed, which can affect your billing cycle.',
+      'When the job reaches dry standard, enter the "Drying Complete" date in DryBooks immediately. All material readings should be at or below goal values before closing.',
+      null);
   }
 
-  // R-006: Dehumidifier sizing per zone
-  for (const z of (r.zones || [])) {
-    if (z.dehuMinPPD && z.dehuActualPPD) {
-      if (z.dehuActualPPD < z.dehuMinPPD) {
-        add(SEV.HIGH, `R-006-Z${z.number}`, `Zone ${z.number} dehumidification UNDERSIZED`,
-          `Dehu Actual Capacity Placed (${z.dehuActualPPD} PPD) is less than Min Required (${z.dehuMinPPD} PPD). This causes extended drying and carriers will dispute equipment-day charges.`,
-          `Zone ${z.number}\nMin Required: ${z.dehuMinPPD} PPD\nActual Placed: ${z.dehuActualPPD} PPD\nShortfall: ${z.dehuMinPPD - z.dehuActualPPD} PPD`);
+  // ── R-006: Extended Drying — Over 7 Days ──────────────────────────────
+  const daysNum = r.daysToDry ? parseFloat(r.daysToDry) : null;
+  if (daysNum && daysNum > 7) {
+    const catNum = r.categoryDoc ? parseInt(r.categoryDoc) : null;
+    const isCat1 = catNum === 1;
+    add(daysNum > 14 ? 'critical' : 'high',
+      `Extended Drying — ${daysNum} Days (Standard: 5–7 Days)`,
+      `Days to Dry Documented: ${daysNum} days\nCategory of Water: ${catNum || 'Unknown'}\nTotal Affected SF: ${r.totalAffectedSF || 'Unknown'}`,
+      isCat1
+        ? `Category 1 (clean water) should dry the fastest — typically 3–5 days. When a Category 1 job takes ${daysNum} days, something specific caused that delay. Insurance carriers will question every day past Day 7, and without documentation explaining the delay, they can reduce your payment for those extra days. The IICRC S500 states that Category 1 water with normal evaporation load should reach dry standard in the typical 3–5 day window.`
+        : `Standard water damage jobs are expected to reach dry standard within 5–7 days. At ${daysNum} days, this job is ${(daysNum-7).toFixed(1)} days over that window. Without documented authorization from the adjuster for the extra days, the carrier can — and often will — reduce payment for the time beyond 7 days.`,
+      `1. Find the diary notes that explain WHY drying took longer (demolition delays, equipment issues, asbestos/lead holds, access problems).\n2. Confirm there is a documented call or email to the adjuster authorizing the extended drying days.\n3. If no authorization exists, contact the adjuster now and get written approval. Document it in the diary immediately.\n4. ${isCat1 ? 'For Category 1: note specifically what caused the extended timeline (Class 4 materials, late access, pending testing, etc.).' : ''}`,
+      'IICRC S500 Section 13 — Drying Goals and Timelines');
+  }
+
+  // ── R-007: Category of Water vs. Cause of Loss ───────────────────────────
+  const cause = (r.causeOfLoss || '').toLowerCase();
+  const catDoc = r.categoryDoc ? parseInt(r.categoryDoc) : null;
+  let catSuggestion = null;
+  if (/angle stop|supply line|supply pipe|water line|pipe burst|pipe break|copper|pvc|feed line|fresh water|clean water/i.test(cause)) {
+    catSuggestion = 1;
+  } else if (/toilet overflow|toilet backup|toilet bowl|washing machine|dishwasher|sink overflow|gray water|washer/i.test(cause)) {
+    catSuggestion = 2;
+  } else if (/sewage|sewer|black water|septic|toilet.*backup|backup.*sewer/i.test(cause)) {
+    catSuggestion = 3;
+  } else if (/other|unknown/i.test(cause) || !cause) {
+    add('medium', 'Cause of Loss is Vague — Category Cannot Be Verified',
+      `Cause of Loss documented as: "${r.causeOfLoss || 'Not entered'}"`,
+      'The cause of loss determines what Category of Water the job should be. "Other" or a vague description makes it impossible to verify the Category. Carriers can challenge the Category if it isn\'t backed by a clear source description. Category affects what cleaning protocols are required and how much work is defensible.',
+      'Update the Cause of Loss to be specific. Examples: "Toilet supply line failure," "Toilet bowl overflow," "Washing machine overflow," "Failed refrigerator ice maker line." The more specific, the better.',
+      'IICRC S500 Section 6 — Water Categories');
+  }
+  if (catSuggestion !== null && catDoc !== null && catSuggestion !== catDoc) {
+    add('high', `Category of Water May Be Incorrect — Should Be Category ${catSuggestion}`,
+      `Cause of Loss: "${r.causeOfLoss}"\nCategory Documented: ${catDoc}\nExpected Category Based on Source: ${catSuggestion}`,
+      catSuggestion === 1
+        ? `The source described (${r.causeOfLoss}) carries clean, fresh water. Per IICRC S500, this is Category 1 water — the cleanest type. Documenting it as Category ${catDoc} overstates the contamination level without justification. If a carrier's expert reviews this, they may use it to argue the documentation is inaccurate.`
+        : catSuggestion === 2
+        ? `The source described suggests Category 2 (gray water) — water that has some contamination. The Category documented is ${catDoc}. Make sure the Category matches what the source actually was.`
+        : `The source described suggests Category 3 (black water / sewage). This is the highest and most hazardous category. If Category 3 is correct, make sure all PPE, containment, and cleaning protocols are documented.`,
+      catSuggestion === 1 && catDoc === 2
+        ? `If the water source was truly a clean supply line, change the Category to 1. Exception: if water sat for more than 48 hours before arrival, it may have grown bacteria and a Category 2 upgrade is justified — but that justification MUST be written in the diary notes with the date of loss and date of arrival clearly shown.`
+        : `Review the cause of loss and confirm the Category matches. Document the reason for the Category in the diary notes.`,
+      'IICRC S500 Section 6 — Water Source Categories (Table 6-1)');
+  }
+
+  // ── R-008: Cat 2/3 Pre-Cleaning Before Air Movers ────────────────────────
+  if (catDoc && catDoc >= 2 && !r.antimicrobialMentioned) {
+    add('high', `Category ${catDoc} Water — No Pre-Cleaning Documented Before Air Movers`,
+      `Water Category documented: ${catDoc}\nAntimicrobial/cleaning documented: NO`,
+      `For Category 2 and Category 3 water, the IICRC S500 requires that affected surfaces be cleaned and treated with an antimicrobial agent BEFORE rapid air movement is used. Turning on air movers without cleaning first can spread contaminated particles through the air and to other surfaces. If this isn't documented, a carrier or plaintiff's attorney can argue that SERVPRO spread contamination throughout the property.`,
+      `Add a diary note stating: "Affected surfaces were cleaned and antimicrobial [product name] was applied to [list surfaces] prior to initiating air movement on [date and time]." If this was actually done but not documented, correct the records immediately.`,
+      'IICRC S500 Section 12.3 — Category 2 and 3 Response Procedures');
+  }
+
+  // ── R-009: Zone Dehu Sizing ──────────────────────────────────────────────
+  r.zones.forEach((z, i) => {
+    if (z.dehuMin !== null && z.dehuAct !== null) {
+      if (z.dehuAct === 0 && z.dehuMin > 0) {
+        add('critical', `Zone ${z.zoneNum} — NO Dehumidifier Placed (${z.dehuMin} PPD Required)`,
+          `Zone ${z.zoneNum} Minimum Required: ${z.dehuMin} PPD\nActual Placed: 0 PPD\nShortfall: ${z.dehuMin} PPD (100% short)`,
+          'Without a dehumidifier, moisture that evaporates from wet materials has nowhere to go. It will re-absorb into walls, ceilings, and building materials, causing mold growth and extending drying time indefinitely. This zone cannot dry properly without dehumidification.',
+          `Place a dehumidifier in Zone ${z.zoneNum} with a minimum capacity of ${z.dehuMin} PPD. If power was the issue, document the exact breaker amperage, how many circuits are available, and what steps were taken (or will be taken) to get power to this zone. Contact an electrician and document that call.`,
+          'IICRC S500 Section 14 — Dehumidification Requirements');
+      } else if (z.dehuAct < z.dehuMin) {
+        const short = (z.dehuMin - z.dehuAct).toFixed(0);
+        add('high', `Zone ${z.zoneNum} — Dehumidifier Undersized by ${short} PPD`,
+          `Zone ${z.zoneNum} Minimum Required: ${z.dehuMin} PPD\nActual Placed: ${z.dehuAct} PPD\nShortfall: ${short} PPD`,
+          `The dehumidifier placed in this zone cannot remove moisture fast enough. An undersized dehu means moisture stays in the air and re-absorbs back into building materials. This slows drying and extends the number of days equipment is needed — which the carrier will question.`,
+          `Add a second dehumidifier or replace the current one with a unit rated at least ${z.dehuMin} PPD. Update the diary notes with the reason a smaller unit was initially placed, and document when the correction was made.`,
+          'IICRC S500 Section 14.2 — Dehumidifier Sizing');
       }
     }
-  }
+  });
 
-  // R-007: Air movers within required range
-  for (const z of (r.zones || [])) {
-    if (z.airMoversRequired && z.airMoversPlaced !== undefined) {
-      const rangeNums = (z.airMoversRequired.match(/\d+/g) || []).map(Number);
-      const minReq = Math.min(...rangeNums);
-      const maxReq = Math.max(...rangeNums);
-      if (z.airMoversPlaced < minReq) {
-        add(SEV.HIGH, `R-007-Z${z.number}`, `Zone ${z.number} air mover count BELOW required range`,
-          `${z.airMoversPlaced} placed vs ${z.airMoversRequired} required. Underwriting will dispute.`,
-          `Zone ${z.number}\nRequired: ${z.airMoversRequired}\nPlaced: ${z.airMoversPlaced}`);
-      } else if (z.airMoversPlaced > maxReq) {
-        add(SEV.MEDIUM, `R-007b-Z${z.number}`, `Zone ${z.number} air movers EXCEED required range`,
-          `${z.airMoversPlaced} placed vs ${z.airMoversRequired} required. May trigger equipment-placement-exceeded notification and chargeback. Confirm authorization in narrative.`,
-          `Zone ${z.number}\nRequired: ${z.airMoversRequired}\nPlaced: ${z.airMoversPlaced}`);
-      }
+  // ── R-010: Zone Air Mover Sizing ─────────────────────────────────────────
+  r.zones.forEach(z => {
+    if (z.amReqMin !== null && z.amPlaced !== null && z.amPlaced < z.amReqMin) {
+      add('high', `Zone ${z.zoneNum} — Air Movers Undersized (${z.amPlaced} placed, ${z.amReqRaw} required)`,
+        `Zone ${z.zoneNum} Air Movers Required: ${z.amReqRaw}\nAir Movers Placed: ${z.amPlaced}\nShortfall: ${z.amReqMin - z.amPlaced} units minimum`,
+        'Too few air movers means surfaces dry unevenly. Wet spots that aren\'t reached by airflow will stay wet long after the rest of the room is dry, leading to hidden mold growth and an extended billing period the carrier may not pay.',
+        `Add ${z.amReqMin - z.amPlaced} more air movers to Zone ${z.zoneNum} to meet the minimum requirement. Position them to cover all wet wall and floor surfaces. Document the addition in the diary with the exact placement.`,
+        'IICRC S500 Section 14.3 — Air Mover Placement');
+    }
+  });
+
+  // ── R-011: Class of Water vs. Affected % ─────────────────────────────────
+  const classDoc = r.classDoc ? parseInt(r.classDoc) : null;
+  const pctValues = r.zones.map(z => z.affectedPct).filter(p => p !== null);
+  const avgPct = pctValues.length ? pctValues.reduce((a,b)=>a+b,0)/pctValues.length : null;
+  if (avgPct !== null && classDoc !== null) {
+    let expectedClass = avgPct < 5 ? 1 : avgPct < 40 ? 2 : 3;
+    if (Math.abs(expectedClass - classDoc) >= 1) {
+      add('medium', `Class of Water May Be Incorrect — Documented: Class ${classDoc}, Expected: Class ${expectedClass}`,
+        `Average Affected Surface Area: ${avgPct.toFixed(0)}%\nClass Documented: ${classDoc}\nClass Expected (Based on S500 %): ${expectedClass}`,
+        `The IICRC S500 defines water classes by what percentage of surfaces (floor + walls + ceiling combined) are wet. Based on the affected percentages in this report, Class ${expectedClass} appears more appropriate than the documented Class ${classDoc}.`,
+        `Review each zone's affected surface percentages and confirm the Class. The correct Class affects drying time expectations and equipment justification. Document the Class selection in the diary notes with the percentage calculation.`,
+        'IICRC S500 Section 5 — Classification of Water Intrusion');
     }
   }
 
-  // R-008: GDep < 6 in affected zone
-  const dehuReadings = r.atmospherics.filter(a => a.dehu);
-  const lowGdep = dehuReadings.filter(a => a.dehu.gdep < 6);
-  if (lowGdep.length >= 2) {
-    add(SEV.HIGH, 'R-008', `Low GDep (<6) on ${lowGdep.length} reading(s)`,
-      'Grains depression below 6 indicates insufficient drying pressure differential — equipment may not be working effectively or readings are suspect.',
-      lowGdep.slice(0, 5).map(a => `Zone ${a.zone} @ ${fmt(a.timestamp)}: GDep ${a.dehu.gdep}`).join('\n'));
+  // ── R-012: Class 4 — Framing in Materials ────────────────────────────────
+  const hasFraming  = /[Ff]raming|[Ss]tud/i.test(r.rawText);
+  const hasConcrete = /[Cc]oncrete.*(?:[Ff]loor|[Ww]all)|(?:[Ff]loor|[Ww]all).*[Cc]oncrete/i.test(r.rawText);
+  const hasPlaster  = /[Pp]laster/i.test(r.rawText);
+  const waterSatDays = r.dateOfLoss && r.siteInspected ? (r.siteInspected - r.dateOfLoss) / 86400000 : 0;
+
+  if (hasFraming && classDoc && classDoc < 4) {
+    add('medium', `Class 4 Consideration — Wood Framing Documented in Material Readings`,
+      `Wood framing/studs appear in the material readings.\nWater sat approximately ${waterSatDays.toFixed(1)} days before arrival.\nCurrent Class documented: ${classDoc}`,
+      waterSatDays >= 2
+        ? `Wood framing studs are a "low evaporation material" as defined by IICRC S500. When framing absorbs water (especially after sitting for ${waterSatDays.toFixed(1)} days), it qualifies as Class 4 — deeply held water that requires longer drying times, higher equipment settings, and possibly special drying techniques. Class 4 justifies extended drying times to the carrier.`
+        : `Wood framing is documented in the readings. Water arrived quickly (within ${(waterSatDays*24).toFixed(0)} hours), so deep absorption is less likely — but monitor the framing readings closely. If stud moisture doesn't drop consistently, Class 4 conditions may develop.`,
+      waterSatDays >= 2
+        ? `Consider documenting this as Class 4 if framing moisture readings are significantly elevated. Add a diary note: "Wood framing studs were found wet. Water soaked for approximately ${waterSatDays.toFixed(1)} days. Per IICRC S500, this constitutes Class 4 drying conditions. Extended drying time and specialized drying methods may be required." Notify the adjuster of Class 4 conditions in writing.`
+        : `Continue monitoring framing readings daily. If they are not dropping consistently toward the dry goal, upgrade to Class 4 and notify the adjuster.`,
+      'IICRC S500 Section 5.4 — Class 4 — Deeply Held or Bound Water');
   }
 
-  // R-009: GPP <= 32 in affected zone early in drying
-  if (r.siteInspected) {
-    const earlyAffected = r.atmospherics.filter(a =>
-      a.affected && a.timestamp && hoursBetween(r.siteInspected, a.timestamp) < 48
-    );
-    const lowGpp = earlyAffected.filter(a => a.affected.gpp <= 32);
-    if (lowGpp.length > 0) {
-      add(SEV.MEDIUM, 'R-009', `Suspiciously low GPP in affected zone on Day 1-2`,
-        'GPP ≤ 32 in affected area during first 48 hours of an active water loss is uncommon and may indicate fabricated or misrecorded readings.',
-        lowGpp.map(a => `Zone ${a.zone} @ ${fmt(a.timestamp)}: GPP ${a.affected.gpp}`).join('\n'));
-    }
+  // Large loss — framing NOT checked
+  const totalSF = r.totalAffectedSF ? parseFloat(r.totalAffectedSF.replace(/,/g,'')) : 0;
+  const zoneCount = r.dryingZones ? parseInt(r.dryingZones) : 1;
+  if (!hasFraming && totalSF > 300 && classDoc && classDoc >= 2) {
+    add('medium', `Class 4 Check — Framing Not Documented on a ${Math.round(totalSF)} SF Loss`,
+      `Total Affected SF: ${r.totalAffectedSF}\nZones: ${zoneCount}\nWood framing checked in material readings: NO`,
+      `On a loss of this size with Category ${r.categoryDoc || '?'} water, it is important to check whether wall framing studs absorbed moisture. If framing got wet and was not documented, it could lead to hidden mold growth and future structural issues — and a liability claim against SERVPRO.`,
+      `On the next visit, probe wall framing studs in the most heavily affected areas. If any stud reads above 19% moisture content, add it to the material readings log and note it in the diary. If studs are wet and have been wet for more than 2 days, document Class 4 conditions and notify the adjuster.`,
+      'IICRC S500 Section 5.4 — Class 4 Materials');
   }
 
-  // R-010: Outside readings static (fabrication signature)
-  const outsideRows = r.atmospherics.filter(a => a.outside);
-  const outsideKeys = outsideRows.map(a => `${a.outside.temp}|${a.outside.rh}|${a.outside.gpp}`);
-  const counts = {};
-  outsideKeys.forEach(k => counts[k] = (counts[k]||0)+1);
-  const repeated = Object.entries(counts).filter(([k,v]) => v >= 3);
-  if (repeated.length > 0) {
-    add(SEV.HIGH, 'R-010', 'Identical OUTSIDE atmospheric readings across multiple days',
-      'Outside conditions change daily — identical Temp/RH/GPP across 3+ days strongly suggests fabricated or copy-pasted readings. Major fraud signal.',
-      repeated.map(([k,v]) => `Reading "${k}" appears ${v}× — outside conditions cannot be that static`).join('\n'));
+  // ── R-013: Concrete Progress ─────────────────────────────────────────────
+  if (hasConcrete) {
+    add('info', 'Concrete in Material Readings — Review Progress Rate',
+      'Concrete floor or walls appear in the material readings.',
+      'Concrete is a "low evaporation" material. It will retain some residual moisture permanently and will never read completely zero. However, when water damage is caught quickly (within hours of the loss), concrete should make noticeable progress toward dry standard within the first few days. If concrete readings are barely changing or moving very slowly, it suggests the drying equipment is not creating enough of a drying environment, or the concrete absorbed a large amount of water over time before being discovered.',
+      `Check the concrete readings: Are they dropping at least 5–10% per day early in the job? If readings are stuck or barely moving, consider: (1) adding more dehumidification near the concrete, (2) checking that GDEP is above 6 on every visit, (3) documenting in the diary that concrete retains residual moisture and noting the expected final reading. Alert the adjuster if concrete is not responding to drying equipment.`,
+      'IICRC S500 Section 5.4 — Low Evaporation Materials');
   }
 
-  // R-011: Material reading sequence/identical detection
-  for (const m of (r.materialReadings || [])) {
-    const v = m.values;
-    if (v.length < 3) continue;
-    // Identical consecutive
-    let maxRun = 1, run = 1;
-    for (let i = 1; i < v.length; i++) {
-      if (v[i] === v[i-1]) run++; else { maxRun = Math.max(maxRun, run); run = 1; }
-    }
-    maxRun = Math.max(maxRun, run);
-    if (maxRun >= 4) {
-      add(SEV.MEDIUM, 'R-011a', `Static material readings: ${m.location}`,
-        `Material reading shows ${maxRun} consecutive identical values. Readings should change as material dries — flat lines look fabricated.`,
-        `Location: ${m.location}\nValues: ${v.join(', ')}`);
-    }
-    // Arithmetic sequence detection
-    if (v.length >= 4) {
-      const diffs = [];
-      for (let i = 1; i < v.length; i++) diffs.push(v[i] - v[i-1]);
-      const uniqDiffs = [...new Set(diffs.map(d => d.toFixed(1)))];
-      if (uniqDiffs.length === 1 && Math.abs(parseFloat(uniqDiffs[0])) > 0) {
-        add(SEV.HIGH, 'R-011b', `Perfect arithmetic sequence: ${m.location}`,
-          `Readings change by exactly ${uniqDiffs[0]} each step — real drying is never that linear. Strong fabrication signal.`,
-          `Location: ${m.location}\nValues: ${v.join(', ')}\nConstant delta: ${uniqDiffs[0]}`);
-      }
-    }
+  // ── R-014: HVAC — On Day Without Readings ────────────────────────────────
+  // If HVAC is not documented as "off" on a visit day, readings should exist
+  // We flag this via AI analysis rather than hard rule due to parsing complexity
+
+  // ── R-015: Power Issues — Need Specifics ─────────────────────────────────
+  if (r.powerIssues) {
+    add('medium', 'Power Issues Documented — Additional Detail Required',
+      'Diary notes mention power issues, breaker problems, or spider box limitations.',
+      'When power issues prevent dehumidifiers from being placed, that is a legitimate reason — but the documentation must be specific enough to satisfy an insurance carrier. A carrier that sees "power issues" with no details will question why the problem wasn\'t fixed and may reduce payment for zones without dehumidification.',
+      `Add a diary note with ALL of the following: (1) The exact location of the breaker panel, (2) The total amperage available (e.g., "100-amp panel"), (3) Which circuits were already in use and how many amps they draw, (4) Confirmation that a spider box was brought in or ordered, (5) The amperage capacity of the spider box used, (6) The date and time power was restored to each affected zone, (7) Whether an electrician was called (if so, document their name and company).`,
+      null);
   }
 
-  // R-012: Missing daily readings during active drying window
-  if (r.siteInspected && r.dryingComplete && r.atmospherics.length > 0) {
-    const days = Math.ceil(hoursBetween(r.siteInspected, r.dryingComplete) / 24);
-    const uniqueDays = new Set(r.atmospherics
-      .filter(a => a.timestamp)
-      .map(a => a.timestamp.toDateString()));
-    const expected = Math.max(days, 1);
-    if (uniqueDays.size < expected - 1) {
-      add(SEV.MEDIUM, 'R-012', `Missing daily atmospheric readings`,
-        `Drying spanned ~${expected} days but only ${uniqueDays.size} days have recorded readings. Carriers expect daily monitoring documentation.`,
-        `Expected days: ${expected}\nDays with readings: ${uniqueDays.size}`);
-    }
+  // ── R-016: Missing Monitoring — Split by Section ─────────────────────────
+  const { gaps, atmosphericDays, dehuDays, materialDays } = r;
+  const allGaps = gaps || [];
+  if (allGaps.length > 0) {
+    const gapDescriptions = allGaps.map(g => `${g.from} → ${g.to} (${g.days}-day gap)`).join('\n');
+    add('high', `Missing Monitoring Days — ${allGaps.length} Gap(s) Identified`,
+      `Monitoring gaps found:\n${gapDescriptions}\n\nNote: The following sections must be checked for missing entries in each gap:\n• Atmospheric Readings (Outside, Unaffected, Zone temps/RH/GPP)\n• Dehumidifier Readings (Temp, RH, GPP, GDEP, Hours)\n• Material Moisture Content Readings (per material per room)`,
+      `Daily monitoring is required every day equipment is running. The IICRC S500 requires that technicians document drying progress through regular readings of the affected zone's temperature, humidity, and moisture content. When days are skipped, there is no proof of what was happening in the building. A carrier that sees a 3-day or 5-day gap in readings can argue that: (1) no one was monitoring the job, (2) equipment may have been off, or (3) drying progress cannot be verified for those days.`,
+      `For every gap listed above:\n1. Atmospheric Readings — was Outside/Unaffected/Zone temperature and GPP recorded on every day? If not, document why (e.g., "Readings unavailable on [date] — customer did not grant access").\n2. Dehumidifier Readings — was GDEP and hour counter recorded every visit? Check the hour counter to confirm the dehu was actually running during the gap.\n3. Material Moisture Readings — was every material probed and recorded on every visit day? If materials were not read on a specific day, note the reason.\n\nIf readings were taken but not entered into DryBooks, enter them immediately with a note that they are late entries.`,
+      'IICRC S500 Section 13.2 — Daily Monitoring Documentation');
   }
 
-  // R-012b: Missed ATMOSPHERIC reading days (per zone)
-  if (r.missedAtmosphericDays && r.missedAtmosphericDays.length >= 2) {
-    const byZone = {};
-    r.missedAtmosphericDays.forEach(m => { (byZone[m.zone] = byZone[m.zone] || []).push(m.timestamp); });
-    const zoneBreakdown = Object.entries(byZone)
-      .map(([z, days]) => `Zone ${z}: ${days.length} missed`).join(' | ');
-    const dateList = r.missedAtmosphericDays.slice(0, 10)
-      .map(m => `Z${m.zone}: ${fmt(m.timestamp)}`).join('\n');
-    add(SEV.HIGH, 'R-012a', `${r.missedAtmosphericDays.length} atmospheric reading days missing (${zoneBreakdown})`,
-      'These dates appear in the atmospheric section but no Temp/RH/GPP values were logged. Carriers treat undocumented days as not-monitored — invoice reduction risk.',
-      dateList);
-  }
-  // R-012c: Missed DEHU reading days (per zone)
-  if (r.missedDehuDays && r.missedDehuDays.length >= 2) {
-    const byZone = {};
-    r.missedDehuDays.forEach(m => { (byZone[m.zone] = byZone[m.zone] || []).push(m.timestamp); });
-    const zoneBreakdown = Object.entries(byZone)
-      .map(([z, days]) => `Zone ${z}: ${days.length} missed`).join(' | ');
-    const dateList = r.missedDehuDays.slice(0, 10)
-      .map(m => `Z${m.zone}: ${fmt(m.timestamp)}`).join('\n');
-    add(SEV.HIGH, 'R-012c', `${r.missedDehuDays.length} dehumidifier reading days missing (${zoneBreakdown})`,
-      'Dehu Temp/RH/GPP/GDep/Hrs not recorded on these dates. Without dehu readings you cannot prove the equipment was running effectively — carriers will dispute equipment days.',
-      dateList);
-  }
-  // R-012d: Material reading coverage gap (estimated)
-  if (r.materialEstimatedMissedDays && r.materialEstimatedMissedDays >= 2) {
-    add(SEV.HIGH, 'R-012d', `~${r.materialEstimatedMissedDays} days with no material moisture readings (estimated)`,
-      `The moisture content table has ${r.materialTotalDateColumns} date columns but the best-monitored material was checked on only ${r.materialBestRowReadings} of those days. Without daily material readings you cannot prove progress toward dry standard.`,
-      `Total date columns: ${r.materialTotalDateColumns}\nBest row reading count: ${r.materialBestRowReadings}\nEstimated gap: ${r.materialEstimatedMissedDays} days`);
+  // ── R-017: No Adjuster Contact Documented ────────────────────────────────
+  if (r.adjusterMentions < 2 && daysNum && daysNum > 5) {
+    add('critical', 'No Adjuster Contact Found in Diary Notes',
+      `Adjuster mentions in entire report: ${r.adjusterMentions}\nAuthorization mentions: ${r.authMentions}\nDays to Dry: ${daysNum}`,
+      `On a job that ran ${daysNum} days, there should be documented communication with the adjuster — at minimum, a call or email confirming coverage and authorizing the scope of work. Without this, the carrier has no obligation to pay for anything beyond their own assessment of what was reasonable.`,
+      `Immediately document all adjuster communications that happened during this job. Add diary entries for: (1) The adjuster's name and contact number, (2) Date and time of every call or email, (3) What was discussed (scope, authorization, coverage questions), (4) Any written approval received. If no adjuster contact was made, contact the adjuster today and request authorization for the completed scope.`,
+      null);
+  } else if (r.authMentions === 0 && daysNum && daysNum > 7) {
+    add('high', 'No Written Authorization for Extended Drying Documented',
+      `Days to Dry: ${daysNum} (over 7-day standard)\nWritten authorization mentions: 0`,
+      'Drying beyond 7 days requires carrier authorization. Without it, the carrier can refuse to pay for the extra days. Even if the adjuster verbally approved it, verbal approval with no written record is not defensible.',
+      'Add a diary entry documenting written authorization from the adjuster for drying beyond 7 days. If authorization was given by phone, document: "On [date] at [time], I spoke with Adjuster [Name] at [phone]. They authorized drying to continue through [date] pending [reason]."',
+      'IICRC S500 Section 7.3 — Communication with Property Owner and Insurer');
   }
 
-  // R-013: Narrative gap during active drying
-  if ((r.narrative || []).length >= 2) {
-    const sorted = r.narrative.filter(n => n.timestamp).sort((a,b) => a.timestamp - b.timestamp);
-    for (let i = 1; i < sorted.length; i++) {
-      const gap = hoursBetween(sorted[i-1].timestamp, sorted[i].timestamp);
-      if (gap > 48) {
-        add(SEV.MEDIUM, 'R-013', `Communication gap: ${gap.toFixed(0)}h with no narrative entry`,
-          `No documented communication for ${(gap/24).toFixed(1)} days during active drying. Reviewers flag silent periods as suspicious.`,
-          `From: ${fmt(sorted[i-1].timestamp)}\nTo: ${fmt(sorted[i].timestamp)}`);
-        break;
-      }
-    }
+  // ── R-018: Active Leak Not Resolved ──────────────────────────────────────
+  if (r.activeLeak) {
+    add('critical', 'Active Water Source Not Resolved — Drying Cannot Succeed',
+      'Diary notes document that the water source (leak) was still active during the job.',
+      'This is a fundamental problem. You cannot dry a building that is still getting wet. Running drying equipment with an active leak is not only ineffective, it\'s documenting that SERVPRO continued billing for equipment while knowing the drying couldn\'t succeed. Carriers will use this to reduce or deny payment.',
+      `Add diary entries documenting: (1) The date the leak was confirmed active, (2) Who was notified (homeowner, adjuster, plumber), (3) The date a plumber was confirmed on-site and the leak was repaired, (4) The date drying was able to begin effectively. Drying days should not be billed from before the source was repaired unless equipment was placed for protective reasons, which must be documented.`,
+      null);
   }
 
-  // R-014: Adjuster contact documented
-  const adjusterMentions = (r.narrative || []).filter(n => /adjuster/i.test(n.text)).length;
-  if (adjusterMentions === 0 && r.daysToDry > 3) {
-    add(SEV.HIGH, 'R-014', 'No adjuster contact documented in Daily Narrative',
-      'No mention of adjuster communication in the narrative. Carriers require documented adjuster coordination for any meaningful loss.',
-      `Adjuster mentions in narrative: 0`);
+  // ── R-019: Asbestos / Lead — Demolition Held ─────────────────────────────
+  if (r.asbestosFlag || r.leadFlag) {
+    const bothFlags = r.asbestosFlag && r.leadFlag;
+    add('medium', `${bothFlags ? 'Asbestos and Lead' : r.asbestosFlag ? 'Asbestos' : 'Lead Paint'} Testing Required — Demolition Impact`,
+      `${r.asbestosFlag ? 'Asbestos testing noted in diary.\n' : ''}${r.leadFlag ? 'Lead paint testing noted in diary.' : ''}`,
+      `When asbestos or lead testing is required before demolition, it creates a legitimate hold on the mitigation work. However, this delay must be documented clearly so the carrier understands why drying took longer. Without documentation, a carrier will see a long drying time with no explanation.`,
+      `Document in the diary: (1) The date testing was ordered, (2) The company performing the test and their contact info, (3) The date results were received, (4) What the results showed, (5) How that affected the scope of work. Keep a copy of all test results attached to the job file.`,
+      null);
   }
 
-  // R-015: Category vs narrative keyword check
-  const blackTerms = /sewage|toilet|raw waste|fecal|black water|septic/i;
-  const grayTerms = /dishwasher|washing machine|appliance overflow|aquarium|gray water|shower drain/i;
-  const cleanTerms = /supply line|broken pipe|water heater|sink supply|burst pipe|clean water|category 1/i;
-  const narrativeText = (r.narrative || []).map(n => n.text).join(' ');
-  let suggestedCat = null;
-  if (blackTerms.test(narrativeText)) suggestedCat = 3;
-  else if (grayTerms.test(narrativeText)) suggestedCat = 2;
-  else if (cleanTerms.test(narrativeText)) suggestedCat = 1;
-  if (suggestedCat && r.category && suggestedCat !== r.category) {
-    add(SEV.MEDIUM, 'R-015', `Possible Category mismatch (documented Cat ${r.category}, narrative suggests Cat ${suggestedCat})`,
-      'Narrative keywords suggest a different category than documented. Review carefully — wrong category leads to wrong scope and lost revenue.',
-      `Documented Category: ${r.category}\nSuggested from narrative: ${suggestedCat}`);
+  // ── R-020: Unexplained Class Override ────────────────────────────────────
+  if (r.hasClassOverride) {
+    add('medium', 'Water Class Was Manually Overridden — Explanation Required',
+      'A "Zone Water Class Override" entry was found in the diary notes.',
+      'Manually changing the water class after the initial assessment is allowable — but it must be explained. A carrier that sees a class override with no explanation will question whether the job was documented accurately.',
+      'Add a diary note explaining why the class was overridden. For example: "Class was updated from Class 2 to Class 3 on [date] after finding that more than 40% of the ceiling was also affected upon demolition."',
+      'IICRC S500 Section 5 — Water Classification');
   }
 
-  // R-016: Class from affected percentages + Class 4 material detection
-  if (r.zones && r.zones.length) {
-    const allRooms = r.zones.flatMap(z => z.rooms || []);
-    if (allRooms.length) {
-      const avgTotal = allRooms.reduce((s, room) => s + (room.totalPct || 0), 0) / allRooms.length;
-      let suggestedClass = null;
-      if (avgTotal < 5) suggestedClass = 1;
-      else if (avgTotal < 40) suggestedClass = 2;
-      else suggestedClass = 3;
-      // Class 4 override: if low-evaporation materials are present in readings, recommend Class 4
-      if (r.class4Candidates && r.class4Candidates.length > 0) {
-        const class4Mats = r.class4Candidates.join(', ');
-        if (r.class !== 4) {
-          add(SEV.MEDIUM, 'R-016b', `Class 4 candidate materials detected — verify class assignment`,
-            `Low-evaporation materials present in readings (${class4Mats}). Per S500, Class 4 applies when these absorb significant water. Documented as Class ${r.class}; if these materials were wet at meaningful depth, this should be Class 4 (drying methodology and billing differ significantly).`,
-            `Documented Class: ${r.class}\nClass 4 candidate materials: ${class4Mats}\nRecommendation: review moisture content readings to determine if depth/saturation justifies Class 4.`);
-        }
-      }
-      if (r.class && suggestedClass !== r.class) {
-        add(SEV.MEDIUM, 'R-016', `Class recommendation: Class ${suggestedClass} (documented Class ${r.class})`,
-          `Per S500, Class is based on % of porous materials of combined floor/wall/ceiling. Average affected % across rooms is ${avgTotal.toFixed(1)}%. Computation suggests Class ${suggestedClass}. Verify against the actual material distribution — this is a heuristic.`,
-          `Documented Class: ${r.class}\nRecommended Class: ${suggestedClass}\nAvg affected %: ${avgTotal.toFixed(1)}%\nRoom breakdown: ${allRooms.map(rm => rm.name + '=' + rm.totalPct + '%').join(', ')}`);
-      }
-    }
+  // ── R-021: ES Immediate Notifications ────────────────────────────────────
+  if (r.esNotifications > 0) {
+    add('medium', `${r.esNotifications} ES Immediate Notification(s) — Follow-Up Required`,
+      `ES Immediate Notifications logged: ${r.esNotifications}`,
+      'ES Immediate Notifications are system-generated flags indicating something requires urgent attention. If these are not addressed and documented, they show up in the client-facing record as unresolved issues — which a carrier can use to question the quality of the work.',
+      'For each ES Notification: find what triggered it, add a diary note explaining what action was taken in response, and confirm the issue was resolved.',
+      null);
   }
 
-  return f;
+  // ── R-022: EMS Limit Exceeded ────────────────────────────────────────────
+  if (r.emsExceeded) {
+    add('medium', 'EMS (Electronic Moisture System) Limit Exceeded',
+      'The DryBooks system flagged that EMS limits were exceeded.',
+      'This flag indicates that moisture readings have reached a threshold that the system considers abnormal. It may indicate mold risk, structural damage, or that the drying is not progressing as expected.',
+      'Document what caused the EMS limit to be exceeded and what corrective action was taken. Notify the adjuster of this flag if not already done.',
+      null);
+  }
+
+  // ── R-023: In-Place Drying Not Performed on Cat 1 ────────────────────────
+  if (r.inPlaceDryingFlag) {
+    add('info', 'In-Place Drying Flag — Category Conflict Noted',
+      'The system flagged "In-place drying not performed on CAT 1."',
+      'This flag appears when materials that could be dried in place (Category 1, minor intrusion) were removed instead. While demolition is sometimes necessary, this flag indicates the system expected in-place drying. The decision to remove materials must be documented and justified.',
+      'Add a diary note explaining why in-place drying was not performed and demolition was chosen instead. For example: "In-place drying was not performed because asbestos testing was required" or "Material was too saturated for effective in-place drying after [X] days of soaking."',
+      null);
+  }
+
+  // ── R-024: Identical Readings Across Multiple Materials (Fabrication) ─────
+  // This is detected by AI — flagged here as info for AI to investigate
+  // The AI prompt will specifically look for this pattern
+
+  return findings;
 }
 
-// ============================================================
-// AI ANALYSIS
-// ============================================================
-function buildAIPrompt(report, findings) {
-  // Compute the affected-percent picture so the AI can recommend a Class.
-  const allRooms = (report.zones || []).flatMap(z => (z.rooms || []).map(rm => ({ zone: z.number, ...rm })));
-  const avgAffected = allRooms.length
-    ? (allRooms.reduce((s, rm) => s + (rm.totalPct || 0), 0) / allRooms.length).toFixed(1)
-    : null;
+// ─── Render Results ───────────────────────────────────────────────────────────
+function renderResults(r, findings) {
+  const el = document.getElementById('results');
+  el.style.display = 'block';
 
-  const summary = {
-    customer: report.customerName,
-    claim: report.claimNumber,
-    project: report.projectNumber,
-    documented: {
-      category: report.category,
-      class: report.class,
-      daysToDry: report.daysToDry,
-      totalAffectedSF: report.totalAffectedSF
-    },
-    timestamps: {
-      dateOfLoss: report.dateOfLoss && report.dateOfLoss.toISOString(),
-      lossReceived: report.lossReceived && report.lossReceived.toISOString(),
-      customerCalled: report.customerCalled && report.customerCalled.toISOString(),
-      siteInspected: report.siteInspected && report.siteInspected.toISOString(),
-      dryingComplete: report.dryingComplete && report.dryingComplete.toISOString()
-    },
-    zones: report.zones,
-    roomAffectedBreakdown: allRooms,
-    averageAffectedPct: avgAffected,
-    materialTypesObserved: report.materialTypes,
-    class4Candidates: report.class4Candidates,
-    missedDaysBySection: {
-      atmospheric: {
-        total: (report.missedAtmosphericDays || []).length,
-        byZone: (report.missedAtmosphericDays || []).reduce((acc, m) => {
-          const k = 'zone_' + m.zone;
-          acc[k] = (acc[k] || 0) + 1;
-          return acc;
-        }, {})
-      },
-      dehumidifier: {
-        total: (report.missedDehuDays || []).length,
-        byZone: (report.missedDehuDays || []).reduce((acc, m) => {
-          const k = 'zone_' + m.zone;
-          acc[k] = (acc[k] || 0) + 1;
-          return acc;
-        }, {})
-      },
-      material: {
-        totalDateColumns: report.materialTotalDateColumns,
-        bestRowReadings: report.materialBestRowReadings,
-        estimatedMissedDays: report.materialEstimatedMissedDays
-      }
-    },
-    atmosphericsSample: (report.atmospherics || []).slice(0, 40),
-    materialReadingsSample: (report.materialReadings || []).slice(0, 25),
-    narrativeSample: (report.narrative || []).slice(0, 12).map(n => ({
-      ts: n.timestamp && n.timestamp.toISOString(),
-      text: (n.text || '').slice(0, 700)
-    })),
-    hardRuleFindings: findings.map(f => ({ sev: f.severity, rule: f.rule, title: f.title }))
-  };
+  const critCount = findings.filter(f=>f.severity==='critical').length;
+  const highCount  = findings.filter(f=>f.severity==='high').length;
+  const medCount   = findings.filter(f=>f.severity==='medium').length;
+  const passCount  = findings.filter(f=>f.severity==='pass').length;
+  const totalIssues = critCount + highCount + medCount;
+  const score = Math.max(0, 100 - critCount*20 - highCount*10 - medCount*4);
+  const scoreColor = score >= 80 ? '#22c55e' : score >= 60 ? '#f59e0b' : '#ef4444';
 
-  return `You are a senior IICRC S500 water-damage QC reviewer. A DryBooks drying report has been scrubbed by an automated rules engine; the hard-rule findings are listed in "hardRuleFindings". Your job is to deliver RECOMMENDATIONS, not just observations.
-
-REPORT DATA (JSON):
-${JSON.stringify(summary, null, 2)}
-
-Produce the following output, in this exact order, using these section headers:
-
-## CLASS OF WATER RECOMMENDATION
-Per IICRC S500:
-- Class 1: porous materials < 5% of combined floor/wall/ceiling area
-- Class 2: 5% to 40%
-- Class 3: > 40%
-- Class 4: significant water absorption into low-evaporation materials (plaster, wood, concrete, masonry, multi-layer assemblies) — requires special methods/longer drying
-Using "roomAffectedBreakdown" and "materialTypesObserved", recommend a Class with specific numeric reasoning. State whether the documented Class is correct, and if not, what it should be. If Class 4 candidate materials are present, evaluate whether they were wet at meaningful depth based on the moisture readings.
-
-## CATEGORY OF WATER RECOMMENDATION
-Per S500:
-- Category 1: clean water (supply lines, tub overflow, broken pipes, rain)
-- Category 2: significantly contaminated (gray water — washing machine, dishwasher, aged Cat 1)
-- Category 3: grossly contaminated (sewage, toilet overflow, ground water, rising water)
-Review "narrativeSample" for source-of-loss clues. Recommend a Category with reasoning quoting specific narrative phrases.
-
-## DRYING TIMELINE ASSESSMENT
-Compare days to dry against 5-7 day target. If extended, evaluate whether the narrative documents proper authorization (dated adjuster contact, named adjuster, specific scope authorized). State whether the file is defensible against carrier chargeback for the extended days.
-
-## READINGS INTEGRITY
-Examine "atmosphericsSample" and "materialReadingsSample" for fabrication signals: identical readings across days, perfect arithmetic sequences, low GDep (<6) and low GPP (<=32) in affected areas that look implausible. Cite specific values and dates. State which readings, if any, you would not trust if you were the carrier reviewer.
-
-## MISSED MONITORING DAYS
-"missedDaysBySection" lists how many days are missing per section. For EACH section (atmospheric, dehumidifier, material), explain the specific revenue/billing exposure created by the gap and the corrective documentation needed to defend those days against chargeback.
-
-## CORRECTIVE ACTIONS
-For each hard-rule finding in "hardRuleFindings", provide ONE concrete corrective action the project manager should take BEFORE this file leaves the office. Format: "[Rule code] → action: ..."
-
-## ADDITIONAL FINDINGS
-Anything the hard rules missed — narrative quality issues, missing authorizations for billable scope items (asbestos, HEPA, demo, packout), inconsistencies. Each: severity + one-paragraph explanation.
-
-Be ruthless and specific. Cite actual values and dates from the data. Do not pad with disclaimers. Assume the carrier reviewer is actively trying to reduce the invoice.`;
-}
-
-async function callGemini(apiKey, prompt) {
-  const key = apiKey || 'AIzaSyDEFAULT_NO_KEY_PLACEHOLDER';
-  // If no key, we cannot call. Return a helpful message.
-  if (!apiKey) {
-    return { error: 'No Gemini API key configured. Open Settings to add one (free at aistudio.google.com/app/apikey), or switch to "No AI" mode.' };
-  }
-  try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${encodeURIComponent(apiKey)}`;
-    const resp = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-    });
-    if (!resp.ok) {
-      const errTxt = await resp.text();
-      return { error: `Gemini API error (${resp.status}): ${errTxt.slice(0, 300)}` };
-    }
-    const data = await resp.json();
-    return { text: data.candidates?.[0]?.content?.parts?.[0]?.text || '(empty response)' };
-  } catch (e) {
-    return { error: 'Gemini call failed: ' + e.message };
-  }
-}
-
-async function callAnthropic(apiKey, prompt) {
-  try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 2000,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
-    if (!resp.ok) {
-      const errTxt = await resp.text();
-      return { error: `Anthropic API error (${resp.status}): ${errTxt.slice(0, 300)}` };
-    }
-    const data = await resp.json();
-    return { text: data.content?.[0]?.text || '(empty response)' };
-  } catch (e) { return { error: 'Anthropic call failed: ' + e.message }; }
-}
-
-async function callOpenAI(apiKey, prompt) {
-  try {
-    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
-    if (!resp.ok) {
-      const errTxt = await resp.text();
-      return { error: `OpenAI API error (${resp.status}): ${errTxt.slice(0, 300)}` };
-    }
-    const data = await resp.json();
-    return { text: data.choices?.[0]?.message?.content || '(empty response)' };
-  } catch (e) { return { error: 'OpenAI call failed: ' + e.message }; }
-}
-
-async function callWorker(workerUrl, password, prompt) {
-  if (!workerUrl) {
-    return { error: 'No Worker URL configured. Open Settings and paste the URL your admin shared.' };
-  }
-  try {
-    const headers = { 'Content-Type': 'application/json' };
-    if (password) headers['X-Scrubber-Password'] = password;
-    const resp = await fetch(workerUrl, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ prompt })
-    });
-    if (!resp.ok) {
-      const errTxt = await resp.text();
-      return { error: `Worker error (${resp.status}): ${errTxt.slice(0, 400)}` };
-    }
-    const data = await resp.json();
-    if (data.error) return { error: data.error };
-    return { text: data.text || '(empty response from Worker)' };
-  } catch (e) {
-    return { error: 'Worker call failed: ' + e.message + ' (check the URL and that the Worker is deployed)' };
-  }
-}
-
-async function runAI(report, findings) {
-  const settings = loadSettings();
-  if (settings.provider === 'none') return null;
-  const prompt = buildAIPrompt(report, findings);
-  if (settings.provider === 'worker') return await callWorker(settings.workerUrl, settings.workerPassword, prompt);
-  if (settings.provider === 'anthropic') return await callAnthropic(settings.apiKey, prompt);
-  if (settings.provider === 'openai') return await callOpenAI(settings.apiKey, prompt);
-  return await callGemini(settings.apiKey, prompt);
-}
-
-// ============================================================
-// RENDER
-// ============================================================
-function renderReport(report, findings, aiResult) {
-  const root = document.getElementById('results');
-  const sevCounts = { critical: 0, high: 0, medium: 0, low: 0 };
-  findings.forEach(f => sevCounts[f.severity]++);
-
-  const sortOrder = { critical: 0, high: 1, medium: 2, low: 3 };
-  findings.sort((a, b) => sortOrder[a.severity] - sortOrder[b.severity]);
-
-  const dur = (a, b) => (a && b) ? ((b - a) / 3600000).toFixed(1) + 'h' : '—';
-
-  root.innerHTML = `
-    <div class="summary-card">
-      <h2>Report Summary</h2>
-      <div class="grid">
-        <div class="meta"><div class="label">Customer</div><div class="value">${report.customerName || '—'}</div></div>
-        <div class="meta"><div class="label">Claim #</div><div class="value">${report.claimNumber || '—'}</div></div>
-        <div class="meta"><div class="label">Project #</div><div class="value">${report.projectNumber || '—'}</div></div>
-        <div class="meta"><div class="label">Cat / Class</div><div class="value">Cat ${report.category ?? '?'} / Class ${report.class ?? '?'}</div></div>
-        <div class="meta"><div class="label">Days to Dry</div><div class="value">${report.daysToDry ?? '—'}</div></div>
-        <div class="meta"><div class="label">Total Affected SF</div><div class="value">${report.totalAffectedSF ?? '—'}</div></div>
-        <div class="meta"><div class="label">Zones</div><div class="value">${report.dryingZones ?? '—'}</div></div>
-        <div class="meta"><div class="label">Loss → Contact</div><div class="value">${dur(report.lossReceived, report.customerCalled)}</div></div>
-        <div class="meta"><div class="label">Loss → Inspect</div><div class="value">${dur(report.lossReceived, report.siteInspected)}</div></div>
-      </div>
-
-      <div class="severity-summary">
-        ${sevCounts.critical ? `<span class="badge critical"><span class="dot"></span>${sevCounts.critical} Critical</span>` : ''}
-        ${sevCounts.high ? `<span class="badge high"><span class="dot"></span>${sevCounts.high} High</span>` : ''}
-        ${sevCounts.medium ? `<span class="badge medium"><span class="dot"></span>${sevCounts.medium} Medium</span>` : ''}
-        ${sevCounts.low ? `<span class="badge low"><span class="dot"></span>${sevCounts.low} Low</span>` : ''}
-        ${findings.length === 0 ? `<span class="badge ok"><span class="dot"></span>No hard-rule issues</span>` : ''}
-      </div>
-
-      <div class="findings">
-        ${findings.length === 0
-          ? '<div class="empty-ok">No hard-rule violations detected. Review AI analysis below for nuanced issues.</div>'
-          : findings.map(f => `
-            <div class="finding ${f.severity}">
-              <div class="finding-header">
-                <div class="finding-title">${escapeHtml(f.title)}</div>
-                <div class="finding-rule">${f.rule}</div>
-              </div>
-              <div class="finding-message">${escapeHtml(f.message)}</div>
-              ${f.evidence ? `<div class="finding-evidence">${escapeHtml(f.evidence)}</div>` : ''}
-            </div>
-          `).join('')}
-      </div>
-
-      <div class="actions-bar">
-        <button onclick="exportMarkdown()">Export Markdown</button>
-        <button onclick="window.print()">Print / PDF</button>
+  let html = `
+  <div class="score-bar">
+    <div class="score-circle" style="border-color:${scoreColor};color:${scoreColor}">${score}</div>
+    <div class="score-info">
+      <h3>${r.customerName || 'Unknown Customer'} — ${r.insuranceClient || 'Unknown Carrier'}</h3>
+      <p>Claim: ${r.claimNumber || 'N/A'} &nbsp;|&nbsp; Project: ${r.projectNumber || 'N/A'}</p>
+      <div class="counts">
+        ${critCount ? `<span class="count-badge" style="background:rgba(239,68,68,.2);color:#f87171">${critCount} Critical</span>` : ''}
+        ${highCount  ? `<span class="count-badge" style="background:rgba(249,115,22,.2);color:#fb923c">${highCount} High</span>` : ''}
+        ${medCount   ? `<span class="count-badge" style="background:rgba(245,158,11,.2);color:#fbbf24">${medCount} Medium</span>` : ''}
+        ${passCount  ? `<span class="count-badge" style="background:rgba(34,197,94,.2);color:#4ade80">${passCount} Pass</span>` : ''}
       </div>
     </div>
+  </div>
 
-    ${aiResult ? `
-      <div class="ai-section">
-        <div class="ai-label">AI Judgment Layer</div>
-        <h2>Additional findings the rules engine couldn't catch</h2>
-        ${aiResult.error
-          ? `<div style="color: var(--high);">${escapeHtml(aiResult.error)}</div>`
-          : `<div class="ai-content">${escapeHtml(aiResult.text)}</div>`}
-      </div>
-    ` : ''}
-  `;
-  window._lastReport = { report, findings, aiResult };
+  <div class="report-header">
+    <div class="report-header-item"><label>Days to Dry</label><value style="color:${!r.daysToDry ? 'var(--muted)' : parseFloat(r.daysToDry)>7?'#f87171':'#4ade80'}">${r.daysToDry || 'Not closed'}</value></div>
+    <div class="report-header-item"><label>Category of Water</label><value>Category ${r.categoryDoc || '?'}</value></div>
+    <div class="report-header-item"><label>Class of Water</label><value>Class ${r.classDoc || '?'}</value></div>
+    <div class="report-header-item"><label>Cause of Loss</label><value>${r.causeOfLoss || 'Not specified'}</value></div>
+    <div class="report-header-item"><label>Total Affected SF</label><value>${r.totalAffectedSF || 'Unknown'}</value></div>
+    <div class="report-header-item"><label>Drying Zones</label><value>${r.dryingZones || '?'}</value></div>
+  </div>`;
+
+  // Group findings
+  const order = ['critical','high','medium','info','pass'];
+  const grouped = {};
+  order.forEach(s => { grouped[s] = findings.filter(f => f.severity === s); });
+
+  const sectionLabels = {
+    critical: '🚨 Critical Issues — Fix Immediately',
+    high:     '⚠️ High Priority Issues',
+    medium:   '📋 Medium Priority — Needs Documentation',
+    info:     'ℹ️ Informational Notes',
+    pass:     '✅ Checks Passed'
+  };
+
+  order.forEach(sev => {
+    if (!grouped[sev] || grouped[sev].length === 0) return;
+    html += `<div class="section-title">${sectionLabels[sev]}</div>`;
+    grouped[sev].forEach((f, idx) => {
+      const uid = `f-${sev}-${idx}`;
+      html += `
+      <div class="finding ${f.severity}" id="${uid}">
+        <div class="finding-header" onclick="toggleFinding('${uid}')">
+          <span class="finding-badge">${f.severity}</span>
+          <span class="finding-title">${f.title}</span>
+          <span class="finding-toggle">▼ Details</span>
+        </div>
+        <div class="finding-body">`;
+
+      if (f.what) html += `<div class="finding-what"><label>📌 What Was Found</label><p>${f.what.replace(/\n/g,'<br>')}</p></div>`;
+      if (f.why)  html += `<div class="finding-why"><label>❓ Why This Matters</label><p>${f.why.replace(/\n/g,'<br>')}${f.s500ref ? `<br><span class="s500-ref">📖 ${f.s500ref}</span>` : ''}</p></div>`;
+      if (f.action) html += `<div class="finding-action"><label>✅ What To Do</label><p>${f.action.replace(/\n/g,'<br>')}</p></div>`;
+
+      html += `</div></div>`;
+    });
+  });
+
+  // AI section placeholder
+  html += `
+  <div class="section-title">🤖 AI Deep Analysis</div>
+  <div class="ai-section" id="ai-section">
+    <h3><span class="ai-spinner"></span> Running AI analysis — this takes 10–20 seconds…</h3>
+    <div class="ai-content" id="ai-content"></div>
+  </div>`;
+
+  el.innerHTML = html;
+
+  // Auto-open critical/high findings
+  findings.forEach((f, idx) => {
+    if (['critical','high'].includes(f.severity)) {
+      const uid = `f-${f.severity}-${findings.filter((x,i) => i<idx && x.severity===f.severity).length}`;
+      const el2 = document.getElementById(uid);
+      if (el2) el2.classList.add('open');
+    }
+  });
 }
 
-function escapeHtml(s) {
-  if (s === null || s === undefined) return '';
-  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function toggleFinding(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.toggle('open');
 }
 
-function exportMarkdown() {
-  const { report, findings, aiResult } = window._lastReport || {};
-  if (!report) return;
-  let md = `# DryBooks Scrub Report\n\n`;
-  md += `**Customer:** ${report.customerName}\n`;
-  md += `**Claim #:** ${report.claimNumber}\n`;
-  md += `**Project #:** ${report.projectNumber}\n`;
-  md += `**Cat/Class:** ${report.category}/${report.class}  •  **Days to Dry:** ${report.daysToDry}  •  **Total Affected SF:** ${report.totalAffectedSF}\n\n`;
-  md += `## Findings\n\n`;
-  if (findings.length === 0) md += '_No hard-rule violations detected._\n\n';
-  for (const f of findings) {
-    md += `### [${f.severity.toUpperCase()}] ${f.title}  *(${f.rule})*\n`;
-    md += `${f.message}\n\n`;
-    if (f.evidence) md += '```\n' + f.evidence + '\n```\n\n';
-  }
-  if (aiResult && !aiResult.error) {
-    md += `## AI Judgment\n\n${aiResult.text}\n`;
-  }
-  const blob = new Blob([md], { type: 'text/markdown' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${(report.claimNumber || 'scrub').replace(/[^a-z0-9]/gi, '_')}_scrub.md`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-window.exportMarkdown = exportMarkdown;
-
-// ============================================================
-// FILE HANDLING
-// ============================================================
-const dropzone = document.getElementById('dropzone');
-const fileInput = document.getElementById('fileInput');
-const statusEl = document.getElementById('status');
-
-function setStatus(msg, isError) {
-  statusEl.innerHTML = msg;
-  statusEl.classList.add('show');
-  statusEl.classList.toggle('error', !!isError);
-}
-function clearStatus() { statusEl.classList.remove('show', 'error'); }
-
-dropzone.onclick = () => fileInput.click();
-fileInput.onchange = e => handleFile(e.target.files[0]);
-dropzone.ondragover = e => { e.preventDefault(); dropzone.classList.add('dragover'); };
-dropzone.ondragleave = () => dropzone.classList.remove('dragover');
-dropzone.ondrop = e => {
-  e.preventDefault();
-  dropzone.classList.remove('dragover');
-  handleFile(e.dataTransfer.files[0]);
-};
-
-async function handleFile(file) {
-  if (!file) return;
-  if (!file.name.toLowerCase().endsWith('.pdf')) {
-    setStatus('Please upload a PDF file.', true);
+// ─── AI Analysis ──────────────────────────────────────────────────────────────
+async function runAI(report, findings) {
+  const s = loadSettings();
+  const provider = s.provider || 'worker';
+  if (provider === 'none') {
+    document.getElementById('ai-section').innerHTML = '<div class="ai-loading">AI analysis disabled. Enable a provider in Settings.</div>';
     return;
   }
-  document.getElementById('results').innerHTML = '';
-  setStatus('<span class="spinner"></span> Extracting text from PDF...');
-  let lines;
-  try { lines = await extractText(file); }
-  catch (e) { setStatus('Failed to read PDF: ' + e.message, true); return; }
 
-  setStatus('<span class="spinner"></span> Parsing report structure...');
-  const report = parseReport(lines);
+  const criticalFindings = findings.filter(f=>['critical','high'].includes(f.severity)).map(f=>`- ${f.title}: ${f.what||''}`).join('\n');
+  const zonesSummary = report.zones.map(z =>
+    `Zone ${z.zoneNum}: Cat ${z.category||'?'} / Class ${z.waterClass||'?'} | Dehu Min ${z.dehuMin||'?'} PPD / Placed ${z.dehuAct||'0'} PPD | Air Movers Req ${z.amReqRaw||'?'} / Placed ${z.amPlaced||'?'} | Affected ${z.affectedPct||'?'}%`
+  ).join('\n');
 
-  setStatus('<span class="spinner"></span> Running rules engine...');
-  const findings = runRules(report);
+  // Extract key reading snippets
+  const atmoSnippet   = extractSection(report.rawText, 'Atmospheric & Dehumidifier Readings', 'Moisture Content Readings').slice(0,3000);
+  const matSnippet    = extractSection(report.rawText, 'Moisture Content Readings', 'Zone Equipment Usage').slice(0,2000);
+  const diarySnippet  = (report.diaryText || '').slice(0,3000);
 
-  const settings = loadSettings();
-  if (settings.provider !== 'none') {
-    setStatus('<span class="spinner"></span> Running AI judgment layer (' + settings.provider + ')...');
-    const ai = await runAI(report, findings);
-    clearStatus();
-    renderReport(report, findings, ai);
-  } else {
-    clearStatus();
-    renderReport(report, findings, null);
+  const prompt = `You are a certified IICRC Water Damage Restoration expert and insurance claim reviewer. You are reviewing a DryBooks drying report for quality control and billing defensibility.
+
+Your audience is technicians who may not have IICRC certification yet. Write EVERYTHING in plain, simple English — like you are explaining to a smart 9th grader learning the trade. Avoid jargon. When you must use a technical term, immediately explain what it means. Back every finding with a specific IICRC S500 reference (section number and title).
+
+For every problem you find, you MUST include:
+1. WHAT the problem is (specific numbers/dates from the report)
+2. WHY it matters (what could go wrong, what a carrier would say)
+3. EXACTLY WHAT TO DO to fix it (step by step, specific)
+
+---
+
+REPORT OVERVIEW:
+Customer: ${report.customerName || 'Unknown'}
+Carrier: ${report.insuranceClient || 'Unknown'}
+Category of Water: ${report.categoryDoc || 'Unknown'}
+Class of Water: ${report.classDoc || 'Unknown'}
+Cause of Loss: ${report.causeOfLoss || 'Not specified'}
+Days to Dry: ${report.daysToDry || 'Not closed'}
+Total Affected SF: ${report.totalAffectedSF || 'Unknown'}
+Zones: ${report.dryingZones || 'Unknown'}
+Affected Flooring: ${report.affectedFloor || 'Unknown'}
+Adjuster mentions in diary: ${report.adjusterMentions}
+Authorization mentions: ${report.authMentions}
+
+ZONE COMPOSITION SUMMARY:
+${zonesSummary || 'Not available'}
+
+RULES ENGINE ALREADY FLAGGED THESE:
+${criticalFindings || 'No critical findings from rules engine'}
+
+ATMOSPHERIC & DEHU READINGS (excerpt):
+${atmoSnippet}
+
+MATERIAL READINGS (excerpt):
+${matSnippet}
+
+DIARY NOTES (excerpt):
+${diarySnippet}
+
+---
+
+Please analyze this report and provide your findings in the following EXACT format. Use simple language throughout. Include real numbers from the report wherever possible.
+
+═══════════════════════════════════════
+📊 CATEGORY OF WATER REVIEW
+═══════════════════════════════════════
+[Review the cause of loss against the documented category. Is Category 1, 2, or 3 correct? If Category 2 or 3, was antimicrobial treatment documented before air movers were turned on? Reference S500 Section 6.]
+
+═══════════════════════════════════════
+📏 CLASS OF WATER REVIEW
+═══════════════════════════════════════
+[Review affected percentages against S500 Class definitions. Is the Class correct? Are there Class 4 materials (concrete, framing studs, plaster, masonry)? If framing is not in the readings on a large loss, flag it. Reference S500 Section 5.]
+
+═══════════════════════════════════════
+⏱️ TIMELINE & RESPONSE REVIEW
+═══════════════════════════════════════
+[Review all timestamps. Call out any that are wrong, missing, or suspicious. For extended drying, explain what the carrier will say and what justification is needed. Be specific with dates and hour counts.]
+
+═══════════════════════════════════════
+💨 EQUIPMENT PERFORMANCE & RECOMMENDATIONS
+═══════════════════════════════════════
+[This is the most important section for technicians. Review GDEP readings zone by zone. Explain what GDEP means in simple terms. Flag any GDEP below 6 — explain that below 6 means the dehumidifier is barely working. Flag negative GDEP — explain this means the dehu is making things wetter, not drier.
+
+Then give SPECIFIC equipment recommendations:
+- Should more dehumidifiers be added? Where? What size?
+- Should air movers be repositioned?
+- Are dehu hour counters showing the equipment was actually running?
+- Is there any sign equipment was turned off between visits?
+Reference S500 Section 14.]
+
+═══════════════════════════════════════
+📅 DAILY MONITORING REVIEW
+═══════════════════════════════════════
+[Check for missing readings in each of these three sections separately:
+1. Atmospheric Readings (outdoor temp/RH/GPP, unaffected zone, zone conditions)
+2. Dehumidifier Readings (GDEP, hour counter, temp/RH)
+3. Material Moisture Content Readings (per material per room)
+
+For each gap, state the specific dates missing and what section is missing. Explain why daily readings matter in simple terms. Reference S500 Section 13.]
+
+═══════════════════════════════════════
+📈 READINGS INTEGRITY CHECK
+═══════════════════════════════════════
+[Look for signs that readings may not be accurate:
+- Do multiple different materials have identical readings on the same day? (Different materials should dry at different rates)
+- Does the unaffected zone show the same exact numbers every single day? (It should change slightly based on weather and equipment)
+- Are outside atmospheric readings identical on multiple days? (Outside conditions change daily)
+- Do material readings show a perfect, even decrease every day? (Real drying is slightly irregular)
+- Does the narrative say things are improving when the numbers don't show improvement?
+If you find any of these patterns, explain what it could mean and how a carrier reviewer would interpret it.]
+
+═══════════════════════════════════════
+📞 ADJUSTER & AUTHORIZATION REVIEW
+═══════════════════════════════════════
+[Review diary notes for adjuster communication. Is there a documented call introducing SERVPRO to the carrier? Is there written authorization for the scope of work? For jobs over 7 days, is there documented authorization for extended drying? What is missing and what specific diary entries should be added?]
+
+═══════════════════════════════════════
+🔍 ADDITIONAL FINDINGS
+═══════════════════════════════════════
+[Any other issues not covered above. Look especially for: demolition performed without authorization, asbestos/lead testing holding up work without documentation, PPE used for Category 2/3 without documentation, HVAC status inconsistencies, equipment exceptions that were never explained.]
+
+═══════════════════════════════════════
+⚡ PRIORITY ACTION LIST — DO THESE FIRST
+═══════════════════════════════════════
+[List the top 5 most urgent actions the tech or office staff needs to take RIGHT NOW to protect the revenue on this job. Number them 1-5. Be very specific — names, dates, numbers.]`;
+
+  try {
+    let responseText = '';
+    if (provider === 'worker') {
+      responseText = await callWorker(prompt, s);
+    } else if (provider === 'gemini') {
+      responseText = await callGemini(prompt, s.apiKey);
+    } else if (provider === 'claude') {
+      responseText = await callClaude(prompt, s.apiKey);
+    } else if (provider === 'openai') {
+      responseText = await callOpenAI(prompt, s.apiKey);
+    }
+
+    const aiEl = document.getElementById('ai-section');
+    if (aiEl) {
+      aiEl.innerHTML = `
+        <h3>🤖 AI Analysis — ${report.customerName || 'Report'}</h3>
+        <div class="ai-content">${escapeHtml(responseText)}</div>`;
+    }
+  } catch(err) {
+    const aiEl = document.getElementById('ai-section');
+    if (aiEl) aiEl.innerHTML = `<div class="ai-loading" style="color:#f87171">AI Error: ${err.message}<br><br>Check your Worker URL and password in Settings, or try again.</div>`;
   }
+}
+
+async function callWorker(prompt, s) {
+  if (!s.workerUrl) throw new Error('Worker URL not set. Open Settings and enter your Cloudflare Worker URL.');
+  const res = await fetch(s.workerUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt, password: s.workerPassword || '' })
+  });
+  if (!res.ok) {
+    const err = await res.text().catch(()=>'');
+    throw new Error(`Worker returned ${res.status}: ${err.slice(0,200)}`);
+  }
+  const data = await res.json();
+  return data.text || data.response || JSON.stringify(data);
+}
+
+async function callGemini(prompt, key) {
+  if (!key) throw new Error('Gemini API key not set. Open Settings.');
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ contents:[{ parts:[{ text: prompt }] }], generationConfig:{ maxOutputTokens:4096, temperature:0.3 } })
+  });
+  if (!res.ok) throw new Error(`Gemini error ${res.status}`);
+  const d = await res.json();
+  return d.candidates?.[0]?.content?.parts?.[0]?.text || 'No response from Gemini.';
+}
+
+async function callClaude(prompt, key) {
+  if (!key) throw new Error('Anthropic API key not set. Open Settings.');
+  const res = await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
+    body: JSON.stringify({ model:'claude-haiku-4-5-20251001', max_tokens:4096, messages:[{role:'user',content:prompt}] })
+  });
+  if (!res.ok) throw new Error(`Claude error ${res.status}`);
+  const d = await res.json();
+  return d.content?.[0]?.text || 'No response from Claude.';
+}
+
+async function callOpenAI(prompt, key) {
+  if (!key) throw new Error('OpenAI API key not set. Open Settings.');
+  const res = await fetch('https://api.openai.com/v1/chat/completions',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':`Bearer ${key}`},
+    body: JSON.stringify({ model:'gpt-4o-mini', messages:[{role:'user',content:prompt}], max_tokens:4096, temperature:0.3 })
+  });
+  if (!res.ok) throw new Error(`OpenAI error ${res.status}`);
+  const d = await res.json();
+  return d.choices?.[0]?.message?.content || 'No response from OpenAI.';
+}
+
+function escapeHtml(t) {
+  return (t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 </script>
 </body>
