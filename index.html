@@ -884,7 +884,12 @@ function runRules(r) {
 }
 
 // ─── Render Results ───────────────────────────────────────────────────────────
+let _findings = [];   // stored globally so filter can re-render without re-running rules
+let _findingSort = 'document'; // 'document' | 'severity'
+
 function renderResults(r, findings) {
+  _findings = findings;
+  _findingSort = 'document';
   const el = document.getElementById('results');
   el.style.display = 'block';
 
@@ -892,34 +897,34 @@ function renderResults(r, findings) {
   const highCount  = findings.filter(f=>f.severity==='high').length;
   const medCount   = findings.filter(f=>f.severity==='medium').length;
   const passCount  = findings.filter(f=>f.severity==='pass').length;
-  const totalIssues = critCount + highCount + medCount;
   const score = Math.max(0, 100 - critCount*20 - highCount*10 - medCount*4);
   const scoreColor = score >= 80 ? '#22c55e' : score >= 60 ? '#f59e0b' : '#ef4444';
 
-  // Timing boxes
+  // Timing calculations
   const contactMin = diffMinutes(r.lossReceived, r.custCalled);
   const siteMin    = diffMinutes(r.lossReceived, r.siteInspected);
   const contactOk  = contactMin !== null && contactMin >= 0 && contactMin <= 60;
   const siteOk     = siteMin    !== null && siteMin    >= 0 && siteMin    <= 240;
+
   const contactLabel = contactMin === null ? 'No Data'
-    : contactMin < 0 ? 'Invalid Timestamp'
+    : contactMin < 0  ? 'Bad Timestamp'
     : contactMin <= 60 ? `${contactMin} min ✓`
     : `${contactMin} min ✗`;
   const siteLabel = siteMin === null ? 'No Data'
-    : siteMin < 0 ? 'Invalid Timestamp'
+    : siteMin < 0  ? 'Bad Timestamp'
     : siteMin <= 240 ? `${(siteMin/60).toFixed(1)} hrs ✓`
     : `${(siteMin/60).toFixed(1)} hrs ✗`;
-  const contactStyle = contactMin === null ? 'background:#2e3350;color:#94a3b8'
-    : contactOk ? 'background:rgba(34,197,94,.25);color:#4ade80;border-color:rgba(34,197,94,.6)'
-    : 'background:rgba(239,68,68,.25);color:#f87171;border-color:rgba(239,68,68,.6)';
-  const siteStyle = siteMin === null ? 'background:#2e3350;color:#94a3b8'
-    : siteOk ? 'background:rgba(34,197,94,.25);color:#4ade80;border-color:rgba(34,197,94,.6)'
-    : 'background:rgba(239,68,68,.25);color:#f87171;border-color:rgba(239,68,68,.6)';
+
+  // Solid green / red for high visibility in the title bar
+  const contactBg = contactMin === null ? '#2e3350'    : contactOk ? '#16a34a' : '#dc2626';
+  const siteBg    = siteMin    === null ? '#2e3350'    : siteOk    ? '#16a34a' : '#dc2626';
+  const contactTxt= contactMin === null ? '#94a3b8'    : '#fff';
+  const siteTxt   = siteMin    === null ? '#94a3b8'    : '#fff';
 
   let html = `
-  <div class="score-bar">
+  <div class="score-bar" style="flex-wrap:wrap;gap:16px;">
     <div class="score-circle" style="border-color:${scoreColor};color:${scoreColor}">${score}</div>
-    <div class="score-info">
+    <div class="score-info" style="flex:1;min-width:200px;">
       <h3>${r.customerName || 'Unknown Customer'} — ${r.insuranceClient || 'Unknown Carrier'}</h3>
       <p>Claim: ${r.claimNumber || 'N/A'} &nbsp;|&nbsp; Project: ${r.projectNumber || 'N/A'}</p>
       <div class="counts">
@@ -927,6 +932,18 @@ function renderResults(r, findings) {
         ${highCount  ? `<span class="count-badge" style="background:rgba(249,115,22,.2);color:#fb923c">${highCount} High</span>` : ''}
         ${medCount   ? `<span class="count-badge" style="background:rgba(245,158,11,.2);color:#fbbf24">${medCount} Medium</span>` : ''}
         ${passCount  ? `<span class="count-badge" style="background:rgba(34,197,94,.2);color:#4ade80">${passCount} Pass</span>` : ''}
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      <div style="text-align:center;">
+        <div style="font-size:.65rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px;">Loss → Contact</div>
+        <div style="background:${contactBg};color:${contactTxt};font-weight:800;font-size:.95rem;padding:7px 14px;border-radius:8px;white-space:nowrap;">${contactLabel}</div>
+        <div style="font-size:.6rem;color:var(--muted);margin-top:3px;">Limit: 60 min</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:.65rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px;">Loss → On-Site</div>
+        <div style="background:${siteBg};color:${siteTxt};font-weight:800;font-size:.95rem;padding:7px 14px;border-radius:8px;white-space:nowrap;">${siteLabel}</div>
+        <div style="font-size:.6rem;color:var(--muted);margin-top:3px;">Limit: 4 hrs</div>
       </div>
     </div>
   </div>
@@ -938,36 +955,18 @@ function renderResults(r, findings) {
     <div class="report-header-item"><label>Cause of Loss</label><value>${r.causeOfLoss || 'Not specified'}</value></div>
     <div class="report-header-item"><label>Total Affected SF</label><value>${r.totalAffectedSF || 'Unknown'}</value></div>
     <div class="report-header-item"><label>Drying Zones</label><value>${r.dryingZones || '?'}</value></div>
-    <div class="report-header-item">
-      <label>Loss → Contact (≤60 min)</label>
-      <value style="display:inline-block;padding:4px 10px;border-radius:6px;border:1px solid rgba(100,100,100,.3);font-size:.9rem;font-weight:700;${contactStyle}">${contactLabel}</value>
-    </div>
-    <div class="report-header-item">
-      <label>Loss → Site Inspection (≤4 hrs)</label>
-      <value style="display:inline-block;padding:4px 10px;border-radius:6px;border:1px solid rgba(100,100,100,.3);font-size:.9rem;font-weight:700;${siteStyle}">${siteLabel}</value>
-    </div>
   </div>`;
 
-  // ── Findings in chronological (document) order ─────────────────────────────
-  html += `<div class="section-title">📋 Report Findings — In Document Order</div>`;
-  findings.forEach((f, idx) => {
-    const uid = `f-${idx}`;
-    const sevLabel = { critical:'🚨 Critical', high:'⚠️ High', medium:'📋 Medium', info:'ℹ️ Info', pass:'✅ Pass' }[f.severity] || f.severity;
-    html += `
-    <div class="finding ${f.severity}" id="${uid}">
-      <div class="finding-header" onclick="toggleFinding('${uid}')">
-        <span class="finding-badge">${sevLabel}</span>
-        <span class="finding-title">${f.title}</span>
-        <span class="finding-toggle">▼ Details</span>
-      </div>
-      <div class="finding-body">`;
+  // ── Sort filter bar ────────────────────────────────────────────────────────
+  html += `
+  <div style="display:flex;align-items:center;gap:10px;margin:20px 0 4px;flex-wrap:wrap;">
+    <span style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);">Sort findings:</span>
+    <button id="sort-doc" class="btn btn-primary" style="font-size:.8rem;padding:5px 14px;" onclick="setFindingSort('document')">📄 Document Order</button>
+    <button id="sort-sev" class="btn" style="font-size:.8rem;padding:5px 14px;" onclick="setFindingSort('severity')">🚨 By Severity</button>
+  </div>`;
 
-    if (f.what) html += `<div class="finding-what"><label>📌 What Was Found</label><p>${f.what.replace(/\n/g,'<br>')}</p></div>`;
-    if (f.why)  html += `<div class="finding-why"><label>❓ Why This Matters</label><p>${f.why.replace(/\n/g,'<br>')}${f.s500ref ? `<br><span class="s500-ref">📖 ${f.s500ref}</span>` : ''}</p></div>`;
-    if (f.action) html += `<div class="finding-action"><label>✅ What To Do</label><p>${f.action.replace(/\n/g,'<br>')}</p></div>`;
-
-    html += `</div></div>`;
-  });
+  // ── Findings container (re-rendered by setFindingSort) ─────────────────────
+  html += `<div id="findings-list"></div>`;
 
   // AI section placeholder
   html += `
@@ -978,14 +977,75 @@ function renderResults(r, findings) {
   </div>`;
 
   el.innerHTML = html;
+  renderFindingsList('document');
+}
 
-  // Auto-open critical/high findings
-  findings.forEach((f, idx) => {
+function setFindingSort(mode) {
+  _findingSort = mode;
+  document.getElementById('sort-doc').className = mode === 'document' ? 'btn btn-primary' : 'btn';
+  document.getElementById('sort-doc').style.cssText = 'font-size:.8rem;padding:5px 14px;';
+  document.getElementById('sort-sev').className = mode === 'severity' ? 'btn btn-primary' : 'btn';
+  document.getElementById('sort-sev').style.cssText = 'font-size:.8rem;padding:5px 14px;';
+  renderFindingsList(mode);
+}
+
+function renderFindingsList(mode) {
+  const sevLabel = { critical:'🚨 Critical', high:'⚠️ High', medium:'📋 Medium', info:'ℹ️ Info', pass:'✅ Pass' };
+  let html = '';
+
+  if (mode === 'severity') {
+    const sevOrder = ['critical','high','medium','info','pass'];
+    const sevTitles = {
+      critical: '🚨 Critical — Fix Before This Job Is Reviewed',
+      high:     '⚠️ High Priority Issues',
+      medium:   '📋 Medium Priority — Needs Documentation',
+      info:     'ℹ️ Informational Notes',
+      pass:     '✅ Checks Passed'
+    };
+    sevOrder.forEach(sev => {
+      const group = _findings.filter(f => f.severity === sev);
+      if (!group.length) return;
+      html += `<div class="section-title">${sevTitles[sev]}</div>`;
+      group.forEach((f, i) => {
+        const uid = `f-sev-${sev}-${i}`;
+        html += buildFindingCard(f, uid, sevLabel);
+      });
+    });
+  } else {
+    html += `<div class="section-title">📋 Report Findings — Document Order (Page 1 → End)</div>`;
+    _findings.forEach((f, idx) => {
+      html += buildFindingCard(f, `f-doc-${idx}`, sevLabel);
+    });
+  }
+
+  document.getElementById('findings-list').innerHTML = html;
+
+  // Auto-open critical/high
+  _findings.forEach((f, idx) => {
     if (['critical','high'].includes(f.severity)) {
-      const el2 = document.getElementById(`f-${idx}`);
-      if (el2) el2.classList.add('open');
+      const uid = mode === 'severity'
+        ? `f-sev-${f.severity}-${_findings.filter((x,i)=>i<idx&&x.severity===f.severity).length}`
+        : `f-doc-${idx}`;
+      const card = document.getElementById(uid);
+      if (card) card.classList.add('open');
     }
   });
+}
+
+function buildFindingCard(f, uid, sevLabel) {
+  let html = `
+  <div class="finding ${f.severity}" id="${uid}">
+    <div class="finding-header" onclick="toggleFinding('${uid}')">
+      <span class="finding-badge">${sevLabel[f.severity] || f.severity}</span>
+      <span class="finding-title">${f.title}</span>
+      <span class="finding-toggle">▼ Details</span>
+    </div>
+    <div class="finding-body">`;
+  if (f.what)   html += `<div class="finding-what"><label>📌 What Was Found</label><p>${f.what.replace(/\n/g,'<br>')}</p></div>`;
+  if (f.why)    html += `<div class="finding-why"><label>❓ Why This Matters</label><p>${f.why.replace(/\n/g,'<br>')}${f.s500ref?`<br><span class="s500-ref">📖 ${f.s500ref}</span>`:''}</p></div>`;
+  if (f.action) html += `<div class="finding-action"><label>✅ What To Do</label><p>${f.action.replace(/\n/g,'<br>')}</p></div>`;
+  html += `</div></div>`;
+  return html;
 }
 
 function toggleFinding(id) {
