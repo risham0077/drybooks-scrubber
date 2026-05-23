@@ -1010,9 +1010,10 @@ function renderResults(r, findings) {
 
   // AI section placeholder
   html += `
-  <div class="section-title">🤖 AI Deep Analysis</div>
+  <div class="section-title">🤖 AI Quality Control &amp; Training Review</div>
   <div class="ai-section" id="ai-section">
-    <h3><span class="ai-spinner"></span> Running AI analysis — this takes 10–20 seconds…</h3>
+    <h3><span class="ai-spinner"></span> Running AI analysis — this takes 15–30 seconds…</h3>
+    <p style="font-size:.8rem;color:var(--muted);margin-top:8px;">Reviewing Category, Class, timeline, equipment performance, monitoring gaps, readings integrity, adjuster communication, and generating training takeaways…</p>
     <div class="ai-content" id="ai-content"></div>
   </div>`;
 
@@ -1112,14 +1113,18 @@ async function runAI(report, findings) {
   const matSnippet    = extractSection(report.rawText, 'Moisture Content Readings', 'Zone Equipment Usage').slice(0,2000);
   const diarySnippet  = (report.diaryText || '').slice(0,3000);
 
-  const prompt = `You are a certified IICRC Water Damage Restoration expert and insurance claim reviewer. You are reviewing a DryBooks drying report for quality control and billing defensibility.
+  const prompt = `You are a senior IICRC-certified Water Damage Restoration expert, QC reviewer, AND trainer. You are reviewing a DryBooks drying report for two purposes at once:
+1. QUALITY CONTROL — flag anything that could cause a carrier to reduce or deny payment
+2. TRAINING — teach the technician WHY the standard exists and what happens in the real world when it is not followed
 
-Your audience is technicians who may not have IICRC certification yet. Write EVERYTHING in plain, simple English — like you are explaining to a smart 9th grader learning the trade. Avoid jargon. When you must use a technical term, immediately explain what it means. Back every finding with a specific IICRC S500 reference (section number and title).
+Your audience is technicians who are still learning the trade. Many have never read the IICRC S500. Write everything in plain English — like a mentor explaining to a smart apprentice. No jargon without explanation. When you cite the S500, quote what it actually says (paraphrased clearly) and explain what it means on the job site.
 
-For every problem you find, you MUST include:
-1. WHAT the problem is (specific numbers/dates from the report)
-2. WHY it matters (what could go wrong, what a carrier would say)
-3. EXACTLY WHAT TO DO to fix it (step by step, specific)
+For EVERY issue you find, use this exact four-part format:
+
+  📍 WHAT WAS FOUND: [specific numbers, dates, or missing items from THIS report]
+  ✅ WHAT TO DO: [step-by-step, specific, actionable — not vague advice]
+  🔬 WHY THIS MATTERS IN RESTORATION: [explain the science or principle — what physically happens to the structure or the air if this is wrong? What are the real-world consequences for the building and for the customer?]
+  📖 IICRC S500 SAYS: [cite the specific section number and title. Paraphrase what it says clearly. Explain how it applies to what was found in this report.]
 
 ---
 
@@ -1153,70 +1158,80 @@ ${diarySnippet}
 
 ---
 
-Please analyze this report and provide your findings in the following EXACT format. Use simple language throughout. Include real numbers from the report wherever possible.
+Analyze this report and provide your full QC + Training review using the sections below. Use the four-part format (WHAT WAS FOUND / WHAT TO DO / WHY THIS MATTERS / S500 SAYS) for every issue. If a section has no issues, briefly state what was done correctly and why that's important.
 
 ═══════════════════════════════════════
-📊 CATEGORY OF WATER REVIEW
+📊 CATEGORY OF WATER
 ═══════════════════════════════════════
-[Review the cause of loss against the documented category. Is Category 1, 2, or 3 correct? If Category 2 or 3, was antimicrobial treatment documented before air movers were turned on? Reference S500 Section 6.]
+Review the cause of loss vs. the documented Category (1, 2, or 3). Is it correct?
+If Category 2 or 3: was antimicrobial treatment documented BEFORE air movers ran?
+Training angle: Explain what each Category means physically — what is IN the water, why it matters for the technician's safety, and why it determines the cleaning protocol required before drying begins.
 
 ═══════════════════════════════════════
-📏 CLASS OF WATER REVIEW
+📏 CLASS OF WATER
 ═══════════════════════════════════════
-[Review affected percentages against S500 Class definitions. Is the Class correct? Are there Class 4 materials (concrete, framing studs, plaster, masonry)? If framing is not in the readings on a large loss, flag it. Reference S500 Section 5.]
+Review the affected surface percentages against the S500 Class definitions.
+Check for Class 4 materials: concrete, wood framing studs, plaster, masonry, hardwood subfloor.
+Training angle: Explain what Class means — it is about how MUCH of the structure is wet and how DEEP the water has penetrated. Explain why Class 4 matters — low-evaporation materials like concrete and framing hold water tightly and take much longer to dry. If Class 4 is missed, the job will look "done" when it is not.
 
 ═══════════════════════════════════════
-⏱️ TIMELINE & RESPONSE REVIEW
+⏱️ TIMELINE & RESPONSE
 ═══════════════════════════════════════
-[Review all timestamps. Call out any that are wrong, missing, or suspicious. For extended drying, explain what the carrier will say and what justification is needed. Be specific with dates and hour counts.]
+Review all timestamps for accuracy, completeness, and sequence.
+Flag anything missing, out of order, or beyond the response time limits.
+Training angle: Explain WHY response time matters beyond billing — water damage progresses in stages. In the first 24 hours, swelling begins. By 48 hours, mold can start. By 72 hours, Category 1 water can degrade to Category 2 due to bacterial growth. Speed of response directly determines how much of the structure can be saved.
 
 ═══════════════════════════════════════
 💨 EQUIPMENT PERFORMANCE & RECOMMENDATIONS
 ═══════════════════════════════════════
-[This is the most important section for technicians. Review GDEP readings zone by zone. Explain what GDEP means in simple terms. Flag any GDEP below 6 — explain that below 6 means the dehumidifier is barely working. Flag negative GDEP — explain this means the dehu is making things wetter, not drier.
-
-Then give SPECIFIC equipment recommendations:
-- Should more dehumidifiers be added? Where? What size?
-- Should air movers be repositioned?
-- Are dehu hour counters showing the equipment was actually running?
-- Is there any sign equipment was turned off between visits?
-Reference S500 Section 14.]
+Review GDEP zone by zone. Explain what GDEP is in plain terms (Grains Depression — the difference in moisture between the dehu's exhaust and intake air; measures how hard the dehu is working).
+Flag GDEP below 6 — explain that this means the dehu is barely pulling moisture.
+Flag negative GDEP — explain this means the dehu is making the air WETTER, not drier.
+Give specific equipment recommendations with sizes and placement.
+Training angle: Explain the psychrometric drying triangle — temperature, humidity, and airflow must all be working together. A dehu with low GDEP is a sign that something is wrong: either the equipment is too small, the space is too large, air movers are not pointed correctly, or the dehu is malfunctioning. Explain what happens to a structure when drying is ineffective — moisture stays in walls, mold colonizes in 24–48 hours in warm humid conditions, framing can warp and lose structural integrity.
 
 ═══════════════════════════════════════
-📅 DAILY MONITORING REVIEW
+📅 DAILY MONITORING
 ═══════════════════════════════════════
-[Check for missing readings in each of these three sections separately:
-1. Atmospheric Readings (outdoor temp/RH/GPP, unaffected zone, zone conditions)
-2. Dehumidifier Readings (GDEP, hour counter, temp/RH)
-3. Material Moisture Content Readings (per material per room)
-
-For each gap, state the specific dates missing and what section is missing. Explain why daily readings matter in simple terms. Reference S500 Section 13.]
-
-═══════════════════════════════════════
-📈 READINGS INTEGRITY CHECK
-═══════════════════════════════════════
-[Look for signs that readings may not be accurate:
-- Do multiple different materials have identical readings on the same day? (Different materials should dry at different rates)
-- Does the unaffected zone show the same exact numbers every single day? (It should change slightly based on weather and equipment)
-- Are outside atmospheric readings identical on multiple days? (Outside conditions change daily)
-- Do material readings show a perfect, even decrease every day? (Real drying is slightly irregular)
-- Does the narrative say things are improving when the numbers don't show improvement?
-If you find any of these patterns, explain what it could mean and how a carrier reviewer would interpret it.]
+Check these three sections separately for gaps:
+1. Atmospheric Readings (outdoor, unaffected zone, drying zone — temp/RH/GPP)
+2. Dehumidifier Readings (GDEP, hour counter, intake/exhaust temp and RH)
+3. Material Moisture Content Readings (every material, every room, every visit)
+State specific missing dates for each section.
+Training angle: Explain what each reading type tells you and why it cannot be skipped. Atmospheric readings show whether outside conditions are helping or hurting drying. Dehu readings prove the equipment was running and working. Material readings are the only proof that the structure is actually drying — without them, you cannot prove the job succeeded. Explain the S500's psychrometric documentation requirement and why it protects both the customer and SERVPRO.
 
 ═══════════════════════════════════════
-📞 ADJUSTER & AUTHORIZATION REVIEW
+📈 READINGS INTEGRITY
 ═══════════════════════════════════════
-[Review diary notes for adjuster communication. Is there a documented call introducing SERVPRO to the carrier? Is there written authorization for the scope of work? For jobs over 7 days, is there documented authorization for extended drying? What is missing and what specific diary entries should be added?]
+Look for patterns that suggest readings may not be accurate:
+- Multiple different materials with identical readings on the same day
+- Unaffected zone readings that never change across days
+- Outside atmospheric readings that are the same on multiple days
+- Material readings that drop in a perfect straight line every day
+- Narrative says "improving" but numbers don't show it
+Training angle: Explain why real drying data is always slightly irregular — outdoor humidity changes, HVAC cycles affect the zone, materials dry at different rates based on density and thickness. Perfectly uniform readings are a red flag. Teach the tech what accurate monitoring looks like vs. what estimated or fabricated data looks like, and why documentation integrity is the foundation of a defensible claim.
 
 ═══════════════════════════════════════
-🔍 ADDITIONAL FINDINGS
+📞 ADJUSTER & AUTHORIZATION
 ═══════════════════════════════════════
-[Any other issues not covered above. Look especially for: demolition performed without authorization, asbestos/lead testing holding up work without documentation, PPE used for Category 2/3 without documentation, HVAC status inconsistencies, equipment exceptions that were never explained.]
+Review all diary notes for carrier communication. Is there an introduction call? Written scope authorization? Extended drying authorization for jobs over 7 days?
+Training angle: Explain why adjuster communication is not just paperwork — it is how SERVPRO and the carrier stay aligned on the scope. Unauthorized work, no matter how necessary, is work the carrier has no obligation to pay for. Teach the tech that every conversation with an adjuster should be followed immediately by a diary note: who was called, when, what was said, and what was authorized.
 
 ═══════════════════════════════════════
-⚡ PRIORITY ACTION LIST — DO THESE FIRST
+🔍 OTHER FINDINGS
 ═══════════════════════════════════════
-[List the top 5 most urgent actions the tech or office staff needs to take RIGHT NOW to protect the revenue on this job. Number them 1-5. Be very specific — names, dates, numbers.]`;
+Any issues not covered above: demolition without authorization, asbestos/lead holds without documentation, PPE for Category 2/3, HVAC inconsistencies, equipment exceptions not explained, in-place drying decisions not justified.
+For each: use the four-part format.
+
+═══════════════════════════════════════
+📚 TRAINING TAKEAWAYS FOR THIS TECH
+═══════════════════════════════════════
+Based on the specific issues found in this report, write 3–5 training lessons this technician should carry forward to every future job. Make each lesson practical and memorable — something they can apply on their next call. Connect each lesson to what went wrong in this specific report so the learning is grounded in real experience, not abstract rules.
+
+═══════════════════════════════════════
+⚡ PRIORITY ACTION LIST — DO THESE NOW
+═══════════════════════════════════════
+List the top 5 most urgent actions to take RIGHT NOW to protect the revenue on this job. Number 1–5. Be specific: names, dates, dollar amounts if applicable. No vague advice.`;
 
   try {
     let responseText = '';
@@ -1232,9 +1247,18 @@ If you find any of these patterns, explain what it could mean and how a carrier 
 
     const aiEl = document.getElementById('ai-section');
     if (aiEl) {
+      // Format the response: make section headers bold, highlight the four-part labels
+      const formatted = escapeHtml(responseText)
+        .replace(/═+/g, '<span style="color:var(--border)">───────────────────────────────────────</span>')
+        .replace(/(📊|📏|⏱️|💨|📅|📈|📞|🔍|📚|⚡)\s+([A-Z &amp;\/]+)/g, '<strong style="font-size:.95rem;color:var(--accent)">$1 $2</strong>')
+        .replace(/📍 WHAT WAS FOUND:/g, '<strong style="color:#f59e0b">📍 WHAT WAS FOUND:</strong>')
+        .replace(/✅ WHAT TO DO:/g, '<strong style="color:#4ade80">✅ WHAT TO DO:</strong>')
+        .replace(/🔬 WHY THIS MATTERS IN RESTORATION:/g, '<strong style="color:#c084fc">🔬 WHY THIS MATTERS IN RESTORATION:</strong>')
+        .replace(/📖 IICRC S500 SAYS:/g, '<strong style="color:#60a5fa">📖 IICRC S500 SAYS:</strong>');
       aiEl.innerHTML = `
-        <h3>🤖 AI Analysis — ${report.customerName || 'Report'}</h3>
-        <div class="ai-content">${escapeHtml(responseText)}</div>`;
+        <h3 style="margin-bottom:4px;">🤖 AI Quality Control &amp; Training Review — ${escapeHtml(report.customerName || 'Report')}</h3>
+        <p style="font-size:.75rem;color:var(--muted);margin-bottom:16px;">Each issue includes: what was found · what to do · why it matters in restoration · what the IICRC S500 says</p>
+        <div class="ai-content">${formatted}</div>`;
     }
   } catch(err) {
     const aiEl = document.getElementById('ai-section');
