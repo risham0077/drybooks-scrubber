@@ -1,27 +1,27 @@
 // =======================================================================
-// DryBooks Scrubber — Cloudflare Worker Proxy
+// DryBooks Scrubber â€” Cloudflare Worker Proxy
 // =======================================================================
 // PURPOSE: Holds your Gemini API key on the server side so reviewers don't
 // have to manage their own. The HTML calls this Worker; the Worker forwards
 // to Gemini using the secret key configured in Cloudflare.
 //
 // DEPLOYMENT (see README.md for the full step-by-step):
-//   1. Create a Cloudflare account at https://dash.cloudflare.com (free)
-//   2. Workers & Pages → Create → Create Worker
-//   3. Paste THIS ENTIRE FILE into the editor
-//   4. Click "Save and Deploy"
-//   5. Settings → Variables → "Add variable" → Encrypt
-//        Name:  GEMINI_API_KEY
-//        Value: <your Gemini key from aistudio.google.com/app/apikey>
-//      Click Save.
-//   6. (Optional) Add another encrypted variable named SHARED_PASSWORD
-//      to require reviewers to enter a shared password. Leave blank to skip.
-//   7. Copy the Worker URL (e.g. https://drybooks-scrubber.YOURNAME.workers.dev)
-//      Paste it into the HTML's Settings → Shared Worker URL field.
+// 1. Create a Cloudflare account at https://dash.cloudflare.com (free)
+// 2. Workers & Pages â†’ Create â†’ Create Worker
+// 3. Paste THIS ENTIRE FILE into the editor
+// 4. Click "Save and Deploy"
+// 5. Settings â†’ Variables â†’ "Add variable" â†’ Encrypt
+//    Name: GEMINI_API_KEY
+//    Value: <your Gemini key from aistudio.google.com/app/apikey>
+//    Click Save.
+// 6. (Optional) Add another encrypted variable named SHARED_PASSWORD
+//    to require reviewers to enter a shared password. Leave blank to skip.
+// 7. Copy the Worker URL (e.g. https://drybooks-scrubber.YOURNAME.workers.dev)
+//    Paste it into the HTML's Settings â†’ Shared Worker URL field.
 // =======================================================================
 
 const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',                  // Anyone with the URL can call. URL secrecy = your security.
+  'Access-Control-Allow-Origin': '*', // Anyone with the URL can call. URL secrecy = your security.
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, X-Scrubber-Password',
   'Access-Control-Max-Age': '86400'
@@ -84,8 +84,8 @@ export default {
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
-            temperature: 0.2,        // Lower temperature = more consistent QC analysis
-            maxOutputTokens: 4096
+            temperature: 0.2,  // Lower temperature = more consistent QC analysis
+            maxOutputTokens: 8192  // Increased from 4096 â€” full 9-section analysis requires 6kâ€“8k tokens
           }
         })
       });
@@ -112,3 +112,10 @@ export default {
     }
   }
 };
+
+function jsonResponse(obj, status = 200) {
+  return new Response(JSON.stringify(obj), {
+    status,
+    headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
+  });
+}
