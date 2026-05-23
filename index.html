@@ -160,12 +160,16 @@
         <label>Shared Password (if set by admin)</label>
         <input type="password" id="worker-password" placeholder="Ask your manager for this">
       </div>
+      <div style="margin-bottom:12px;">
+        <button class="btn" style="width:100%;font-size:.8rem;" onclick="testWorkerConnection()">🔌 Test Connection</button>
+        <div id="worker-test-result" style="margin-top:8px;font-size:.8rem;display:none;padding:8px 10px;border-radius:6px;"></div>
+      </div>
       <div class="steps">
         <strong style="font-size:.8rem;color:var(--text)">How to use the Shared Worker:</strong>
         <ol>
           <li>Ask your manager for the <strong>Worker URL</strong> and <strong>Shared Password</strong></li>
-          <li>Paste them into the fields above</li>
-          <li>Click <strong>Save</strong> — you're done. No API key needed.</li>
+          <li>Paste them into the fields above and click <strong>Test Connection</strong></li>
+          <li>If you see a green ✓, click <strong>Save</strong> — you're done. No API key needed.</li>
         </ol>
       </div>
     </div>
@@ -225,6 +229,40 @@ function saveSettings() {
 function loadSettings() {
   try { return JSON.parse(localStorage.getItem('db_settings') || '{}'); } catch(e) { return {}; }
 }
+async function testWorkerConnection() {
+  const url = document.getElementById('worker-url').value.trim();
+  const pw  = document.getElementById('worker-password').value;
+  const res = document.getElementById('worker-test-result');
+  res.style.display = 'block';
+  res.style.background = 'rgba(79,142,247,.1)';
+  res.style.color = '#60a5fa';
+  res.textContent = '⏳ Testing connection…';
+  if (!url) {
+    res.style.background = 'rgba(239,68,68,.15)'; res.style.color = '#f87171';
+    res.textContent = '✗ No URL entered. Paste the Worker URL first.'; return;
+  }
+  try {
+    const r = await fetch(url, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: 'Reply with the single word: connected', password: pw })
+    });
+    if (r.status === 401) {
+      res.style.background = 'rgba(239,68,68,.15)'; res.style.color = '#f87171';
+      res.textContent = '✗ Wrong password — the Worker rejected it. Check the password with your manager.';
+    } else if (r.status === 200) {
+      const data = await r.json();
+      res.style.background = 'rgba(34,197,94,.15)'; res.style.color = '#4ade80';
+      res.textContent = '✓ Connected! AI is ready. Click Save.';
+    } else {
+      res.style.background = 'rgba(239,68,68,.15)'; res.style.color = '#f87171';
+      res.textContent = `✗ Worker returned HTTP ${r.status}. URL may be wrong.`;
+    }
+  } catch(e) {
+    res.style.background = 'rgba(239,68,68,.15)'; res.style.color = '#f87171';
+    res.textContent = `✗ Could not reach Worker: ${e.message}. Check the URL.`;
+  }
+}
+
 function updateProviderUI() {
   const p = document.getElementById('provider-select').value;
   document.getElementById('worker-fields').style.display  = p === 'worker' ? '' : 'none';
@@ -1198,7 +1236,22 @@ If you find any of these patterns, explain what it could mean and how a carrier 
     }
   } catch(err) {
     const aiEl = document.getElementById('ai-section');
-    if (aiEl) aiEl.innerHTML = `<div class="ai-loading" style="color:#f87171">AI Error: ${err.message}<br><br>Check your Worker URL and password in Settings, or try again.</div>`;
+    let msg = err.message || 'Unknown error';
+    let guidance = '';
+    if (msg.includes('Worker URL not set') || msg.includes('not set')) {
+      guidance = `<br><br><strong>Fix it:</strong> Click the <strong>⚙️ Settings</strong> button in the top-right corner. Enter the Worker URL and password from your manager, then click <strong>Test Connection</strong> to confirm it works, then <strong>Save</strong>.`;
+    } else if (msg.includes('401') || msg.toLowerCase().includes('password')) {
+      guidance = `<br><br><strong>Fix it:</strong> The password is wrong. Open <strong>⚙️ Settings</strong>, re-enter the password your manager gave you, and click <strong>Test Connection</strong> to verify.`;
+    } else if (msg.includes('Failed to fetch') || msg.includes('NetworkError')) {
+      guidance = `<br><br><strong>Fix it:</strong> Can't reach the Worker URL. Open <strong>⚙️ Settings</strong> and double-check the URL is correct and has no extra spaces.`;
+    } else {
+      guidance = `<br><br>Open <strong>⚙️ Settings</strong>, click <strong>Test Connection</strong>, and check what it shows.`;
+    }
+    if (aiEl) aiEl.innerHTML = `
+      <div style="padding:20px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:8px;">
+        <div style="font-weight:700;color:#f87171;margin-bottom:6px;">⚠️ AI Analysis Not Configured</div>
+        <div style="font-size:.875rem;color:var(--text);line-height:1.6;">${msg}${guidance}</div>
+      </div>`;
   }
 }
 
