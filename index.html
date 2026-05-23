@@ -40,7 +40,7 @@
 
   .section-title { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin: 28px 0 12px; padding-left: 4px; border-left: 3px solid var(--accent); padding-left: 10px; }
 
-  /* Finding cards — bold severity colors */
+  /* Finding cards â€” bold severity colors */
   .finding { border-radius: 10px; border: 1px solid; border-left: 6px solid; padding: 0; margin-bottom: 14px; overflow: hidden; }
   .finding.critical { border-color: rgba(239,68,68,.5); border-left-color: #ef4444; background: rgba(239,68,68,.07); }
   .finding.high     { border-color: rgba(249,115,22,.5); border-left-color: #f97316; background: rgba(249,115,22,.07); }
@@ -112,10 +112,10 @@
 <body>
 
 <header>
-  <h1>🔍 DryBooks <span>Report Scrubber</span></h1>
+  <h1>ðŸ” DryBooks <span>Report Scrubber</span></h1>
   <div style="display:flex;gap:8px">
-    <button class="btn" onclick="document.getElementById('file-input').click()">📄 Upload PDF</button>
-    <button class="btn" onclick="openSettings()">⚙️ Settings</button>
+    <button class="btn" onclick="document.getElementById('file-input').click()">ðŸ“„ Upload PDF</button>
+    <button class="btn" onclick="openSettings()">âš™ï¸ Settings</button>
   </div>
 </header>
 
@@ -123,7 +123,7 @@
 
 <main>
   <div class="drop-zone" id="drop-zone">
-    <div class="icon">📋</div>
+    <div class="icon">ðŸ“‹</div>
     <h2>Drop a DryBooks PDF here</h2>
     <p>Drag and drop your drying report, or click the Upload button above<br>
     The report will be automatically checked for issues</p>
@@ -138,16 +138,16 @@
 <!-- Settings Modal -->
 <div class="modal-overlay" id="settings-modal">
   <div class="modal">
-    <h2>⚙️ Settings — AI Provider</h2>
+    <h2>âš™ï¸ Settings â€” AI Provider</h2>
 
     <div class="form-group">
       <label>AI Provider</label>
       <select id="provider-select" onchange="updateProviderUI()">
-        <option value="worker">Shared Worker (managed key — no setup needed)</option>
+        <option value="worker">Shared Worker (managed key â€” no setup needed)</option>
         <option value="gemini">Gemini Flash (my own free key)</option>
         <option value="claude">Anthropic Claude (my own key)</option>
         <option value="openai">OpenAI GPT (my own key)</option>
-        <option value="none">No AI — rules only</option>
+        <option value="none">No AI â€” rules only</option>
       </select>
     </div>
 
@@ -161,7 +161,7 @@
         <input type="password" id="worker-password" placeholder="Ask your manager for this">
       </div>
       <div style="margin-bottom:12px;">
-        <button class="btn" style="width:100%;font-size:.8rem;" onclick="testWorkerConnection()">🔌 Test Connection</button>
+        <button class="btn" style="width:100%;font-size:.8rem;" onclick="testWorkerConnection()">ðŸ”Œ Test Connection</button>
         <div id="worker-test-result" style="margin-top:8px;font-size:.8rem;display:none;padding:8px 10px;border-radius:6px;"></div>
       </div>
       <div class="steps">
@@ -169,7 +169,7 @@
         <ol>
           <li>Ask your manager for the <strong>Worker URL</strong> and <strong>Shared Password</strong></li>
           <li>Paste them into the fields above and click <strong>Test Connection</strong></li>
-          <li>If you see a green ✓, click <strong>Save</strong> — you're done. No API key needed.</li>
+          <li>If you see a green âœ“, click <strong>Save</strong> â€” you're done. No API key needed.</li>
         </ol>
       </div>
     </div>
@@ -201,10 +201,10 @@
 </div>
 
 <script>
-// ─── PDF.js Setup ────────────────────────────────────────────────────────────
+// â”€â”€â”€ PDF.js Setup â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-// ─── Settings ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Settings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function openSettings() {
   const s = loadSettings();
   document.getElementById('provider-select').value = s.provider || 'worker';
@@ -236,10 +236,10 @@ async function testWorkerConnection() {
   res.style.display = 'block';
   res.style.background = 'rgba(79,142,247,.1)';
   res.style.color = '#60a5fa';
-  res.textContent = '⏳ Testing connection…';
+  res.textContent = 'â³ Testing connectionâ€¦';
   if (!url) {
     res.style.background = 'rgba(239,68,68,.15)'; res.style.color = '#f87171';
-    res.textContent = '✗ No URL entered. Paste the Worker URL first.'; return;
+    res.textContent = 'âœ— No URL entered. Paste the Worker URL first.'; return;
   }
   try {
     const hdrs = { 'Content-Type': 'application/json' };
@@ -250,18 +250,18 @@ async function testWorkerConnection() {
     });
     if (r.status === 401) {
       res.style.background = 'rgba(239,68,68,.15)'; res.style.color = '#f87171';
-      res.textContent = '✗ Wrong password — the Worker rejected it. Check the password with your manager.';
+      res.textContent = 'âœ— Wrong password â€” the Worker rejected it. Check the password with your manager.';
     } else if (r.status === 200) {
       const data = await r.json();
       res.style.background = 'rgba(34,197,94,.15)'; res.style.color = '#4ade80';
-      res.textContent = '✓ Connected! AI is ready. Click Save.';
+      res.textContent = 'âœ“ Connected! AI is ready. Click Save.';
     } else {
       res.style.background = 'rgba(239,68,68,.15)'; res.style.color = '#f87171';
-      res.textContent = `✗ Worker returned HTTP ${r.status}. URL may be wrong.`;
+      res.textContent = `âœ— Worker returned HTTP ${r.status}. URL may be wrong.`;
     }
   } catch(e) {
     res.style.background = 'rgba(239,68,68,.15)'; res.style.color = '#f87171';
-    res.textContent = `✗ Could not reach Worker: ${e.message}. Check the URL.`;
+    res.textContent = `âœ— Could not reach Worker: ${e.message}. Check the URL.`;
   }
 }
 
@@ -276,7 +276,7 @@ function updateProviderUI() {
     keyInput.placeholder = 'AIza...';
     steps.innerHTML = `<strong style="font-size:.8rem;color:var(--text)">How to get a free Gemini key:</strong><ol>
       <li>Go to <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com/app/apikey</a></li>
-      <li>Sign in with a Google account (free — no credit card needed)</li>
+      <li>Sign in with a Google account (free â€” no credit card needed)</li>
       <li>Click <strong>"Create API key"</strong></li>
       <li>Copy the key that starts with <strong>AIza</strong></li>
       <li>Paste it into the field above and click <strong>Save</strong></li>
@@ -285,7 +285,7 @@ function updateProviderUI() {
     keyInput.placeholder = 'sk-ant-...';
     steps.innerHTML = `<strong style="font-size:.8rem;color:var(--text)">How to get an Anthropic key:</strong><ol>
       <li>Go to <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a></li>
-      <li>Create an account (you get $5 free credits — about 50 reports)</li>
+      <li>Create an account (you get $5 free credits â€” about 50 reports)</li>
       <li>Go to <strong>API Keys</strong> and click <strong>"Create Key"</strong></li>
       <li>Copy the key that starts with <strong>sk-ant-</strong></li>
       <li>Paste it above and click <strong>Save</strong></li></ol>`;
@@ -300,7 +300,7 @@ function updateProviderUI() {
   }
 }
 
-// ─── Drag & Drop ─────────────────────────────────────────────────────────────
+// â”€â”€â”€ Drag & Drop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const dz = document.getElementById('drop-zone');
 dz.addEventListener('click', () => document.getElementById('file-input').click());
 dz.addEventListener('dragover',  e => { e.preventDefault(); dz.classList.add('drag-over'); });
@@ -308,18 +308,18 @@ dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
 dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag-over'); if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
 function handleFileInput(e) { if(e.target.files[0]) handleFile(e.target.files[0]); }
 
-// ─── Main File Handler ────────────────────────────────────────────────────────
+// â”€â”€â”€ Main File Handler â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function handleFile(file) {
   if (!file.name.toLowerCase().endsWith('.pdf')) { alert('Please upload a PDF file.'); return; }
-  setProgress(5, 'Reading PDF…');
+  setProgress(5, 'Reading PDFâ€¦');
   const text = await extractPdfText(file);
-  setProgress(30, 'Parsing report data…');
+  setProgress(30, 'Parsing report dataâ€¦');
   const report = parseReport(text);
-  setProgress(55, 'Running rules checks…');
+  setProgress(55, 'Running rules checksâ€¦');
   const findings = runRules(report);
-  setProgress(75, 'Rendering results…');
+  setProgress(75, 'Rendering resultsâ€¦');
   renderResults(report, findings);
-  setProgress(90, 'Running AI analysis…');
+  setProgress(90, 'Running AI analysisâ€¦');
   await runAI(report, findings);
   setProgress(100, 'Done.');
   setTimeout(() => { document.getElementById('progress-bar').style.display='none'; document.getElementById('status-msg').style.display='none'; }, 1000);
@@ -332,7 +332,7 @@ function setProgress(pct, msg) {
   document.getElementById('status-msg').textContent     = msg;
 }
 
-// ─── PDF Text Extraction ──────────────────────────────────────────────────────
+// â”€â”€â”€ PDF Text Extraction â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function extractPdfText(file) {
   const buf = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
@@ -361,7 +361,7 @@ async function extractPdfText(file) {
   return pages.join('\n');
 }
 
-// ─── Report Parser ────────────────────────────────────────────────────────────
+// â”€â”€â”€ Report Parser â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function parseReport(text) {
   const lines = text.split('\n');
   const get = (pattern, flags='i') => {
@@ -600,7 +600,7 @@ function findDateGaps(dates) {
   return gaps;
 }
 
-// ─── Rules Engine ─────────────────────────────────────────────────────────────
+// â”€â”€â”€ Rules Engine â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function runRules(r) {
   const findings = [];
 
@@ -608,63 +608,63 @@ function runRules(r) {
     findings.push({ severity, title, what, why, action, s500ref: s500ref || null });
   }
 
-  // ── R-001: Customer Contact Within 1 Hour ─────────────────────────────────
+  // â”€â”€ R-001: Customer Contact Within 1 Hour â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const contactMin = diffMinutes(r.lossReceived, r.custCalled);
   if (contactMin === null) {
-    add('medium','Customer Contact Time — Cannot Verify',
+    add('medium','Customer Contact Time â€” Cannot Verify',
       'The "Customer Called" or "Loss Received" timestamp is missing or unreadable.',
       'SERVPRO requires the customer to be contacted within 1 hour of receiving the loss. Without a timestamp, this cannot be confirmed.',
       'Make sure both "Loss Received" and "Customer Called" times are entered correctly in DryBooks before closing the job.',
-      'IICRC S500 Section 7 — Initial Response');
+      'IICRC S500 Section 7 â€” Initial Response');
   } else if (contactMin < 0) {
-    add('critical','Customer Called BEFORE Loss Was Received — Impossible Timestamp',
+    add('critical','Customer Called BEFORE Loss Was Received â€” Impossible Timestamp',
       `Customer Called shows ${r.custCalled ? r.custCalled.toLocaleString() : 'unknown'} but Loss Received shows ${r.lossReceived ? r.lossReceived.toLocaleString() : 'unknown'}. The customer was supposedly called ${Math.abs(contactMin)} minutes before the job was even in the system.`,
       'This timestamp sequence is impossible. It means there is a data entry error. Insurance carriers and auditors will flag this immediately as a sign of poor record-keeping or data manipulation. It can be used to challenge the entire report.',
       'Correct the "Loss Received" date in DryBooks. The Loss Received date should be the moment the job came into your system. The Customer Called date should be after that.',
       null);
   } else if (contactMin > 60) {
-    add('high', `Customer Contact Late — ${contactMin} Minutes After Loss Received`,
+    add('high', `Customer Contact Late â€” ${contactMin} Minutes After Loss Received`,
       `Loss Received: ${r.lossReceived.toLocaleString()}\nCustomer Called: ${r.custCalled.toLocaleString()}\nTime gap: ${contactMin} minutes`,
       'The standard requires the customer to be contacted within 60 minutes of the loss being received. Going over this window means a delayed response is documented in the report.',
-      'The tech or office staff should call the customer immediately when a new job comes in — within the hour. If there was a reason for the delay (customer unavailable, after-hours call back), document that reason in the diary notes.',
-      'IICRC S500 Section 7.1 — Initial Contact');
+      'The tech or office staff should call the customer immediately when a new job comes in â€” within the hour. If there was a reason for the delay (customer unavailable, after-hours call back), document that reason in the diary notes.',
+      'IICRC S500 Section 7.1 â€” Initial Contact');
   } else {
-    add('pass', `✓ Customer Contact — ${contactMin} min (within 1 hour)`, `Contact made ${contactMin} minutes after loss received.`, null, null);
+    add('pass', `âœ“ Customer Contact â€” ${contactMin} min (within 1 hour)`, `Contact made ${contactMin} minutes after loss received.`, null, null);
   }
 
-  // ── R-002: Site Inspection Within 4 Hours ────────────────────────────────
+  // â”€â”€ R-002: Site Inspection Within 4 Hours â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const siteMin = diffMinutes(r.lossReceived, r.siteInspected);
   if (siteMin === null) {
-    add('medium','Site Inspection Time — Cannot Verify',
+    add('medium','Site Inspection Time â€” Cannot Verify',
       'The "Site Inspected" timestamp is missing.',
       'SERVPRO requires the site to be inspected within 4 hours of receiving the loss.',
       'Make sure the "Site Inspected" timestamp is entered in DryBooks when the tech arrives on site.',
       null);
   } else if (siteMin > 240) {
     const hrs = (siteMin/60).toFixed(1);
-    add('high', `Site Inspection Late — ${hrs} Hours (Limit: 4 Hours)`,
+    add('high', `Site Inspection Late â€” ${hrs} Hours (Limit: 4 Hours)`,
       `Loss Received: ${r.lossReceived.toLocaleString()}\nSite Inspected: ${r.siteInspected.toLocaleString()}\nActual time to site: ${hrs} hours`,
-      'The 4-hour inspection window exists to show the carrier that SERVPRO responded quickly. Going over this window — even by a few minutes — gives carriers a reason to question the urgency of the response and potentially reduce payment.',
+      'The 4-hour inspection window exists to show the carrier that SERVPRO responded quickly. Going over this window â€” even by a few minutes â€” gives carriers a reason to question the urgency of the response and potentially reduce payment.',
       `Document the reason for the delay in the diary notes. For example: "Tech had to travel from a previous job site." If the delay was unavoidable, put that explanation in writing right away.`,
-      'IICRC S500 Section 7.1 — Emergency Response');
+      'IICRC S500 Section 7.1 â€” Emergency Response');
   } else {
-    add('pass', `✓ Site Inspection — ${(siteMin/60).toFixed(1)} hrs (within 4 hours)`, `Site inspected ${(siteMin/60).toFixed(1)} hours after loss received.`, null, null);
+    add('pass', `âœ“ Site Inspection â€” ${(siteMin/60).toFixed(1)} hrs (within 4 hours)`, `Site inspected ${(siteMin/60).toFixed(1)} hours after loss received.`, null, null);
   }
 
-  // ── R-003: Date of Loss vs Loss Received Gap ─────────────────────────────
+  // â”€â”€ R-003: Date of Loss vs Loss Received Gap â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const dolGap = diffMinutes(r.dateOfLoss, r.lossReceived);
   if (dolGap !== null && dolGap > 1440) {
     const days = Math.round(dolGap / 1440);
-    add('medium', `Date of Loss to Loss Received — ${days}-Day Gap`,
+    add('medium', `Date of Loss to Loss Received â€” ${days}-Day Gap`,
       `Date of Loss: ${r.dateOfLoss.toLocaleString()}\nLoss Received in System: ${r.lossReceived.toLocaleString()}\nGap: ${days} days`,
-      `Water damage that sits for ${days} days before mitigation begins can cause significantly more damage than immediate response. Carriers may use this gap to argue that secondary damage was preventable or to question the accuracy of the timestamps. A ${days}-day gap also raises questions about Category — water that sits for 48+ hours can be upgraded from Category 1 to Category 2 due to potential bacterial growth.`,
-      `Add a diary note explaining the gap. For example, was the homeowner out of town? Was there a dispute about insurance coverage before the job started? Was the "Date of Loss" estimated? Each of these is a valid reason — but it must be documented.`,
-      'IICRC S500 Section 6.4 — Secondary Damage');
+      `Water damage that sits for ${days} days before mitigation begins can cause significantly more damage than immediate response. Carriers may use this gap to argue that secondary damage was preventable or to question the accuracy of the timestamps. A ${days}-day gap also raises questions about Category â€” water that sits for 48+ hours can be upgraded from Category 1 to Category 2 due to potential bacterial growth.`,
+      `Add a diary note explaining the gap. For example, was the homeowner out of town? Was there a dispute about insurance coverage before the job started? Was the "Date of Loss" estimated? Each of these is a valid reason â€” but it must be documented.`,
+      'IICRC S500 Section 6.4 â€” Secondary Damage');
   } else if (dolGap === null && r.dateOfLoss === null) {
     add('medium','Date of Loss Missing', 'No Date of Loss is recorded.', 'The Date of Loss establishes when the water event occurred. Without it, the timeline of the loss cannot be verified.', 'Enter the Date of Loss in DryBooks.', null);
   }
 
-  // ── R-004: Equipment Before Loss Received ───────────────────────────────
+  // â”€â”€ R-004: Equipment Before Loss Received â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (r.siteInspected && r.lossReceived && r.siteInspected < r.lossReceived) {
     add('critical', 'Equipment Placed BEFORE Loss Was Received in System',
       `Site Inspected / Equipment Placed: ${r.siteInspected.toLocaleString()}\nLoss Received in System: ${r.lossReceived.toLocaleString()}`,
@@ -673,7 +673,7 @@ function runRules(r) {
       null);
   }
 
-  // ── R-005: Drying Complete Not Entered ──────────────────────────────────
+  // â”€â”€ R-005: Drying Complete Not Entered â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (!r.dryingComplete && !r.daysToDry) {
     add('medium', 'Drying Complete Date Not Entered',
       'The "Drying Complete" field is blank and "Days to Achieve Dry Standard" is not recorded.',
@@ -682,22 +682,22 @@ function runRules(r) {
       null);
   }
 
-  // ── R-006: Extended Drying — Over 7 Days ──────────────────────────────
+  // â”€â”€ R-006: Extended Drying â€” Over 7 Days â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const daysNum = r.daysToDry ? parseFloat(r.daysToDry) : null;
   if (daysNum && daysNum > 7) {
     const catNum = r.categoryDoc ? parseInt(r.categoryDoc) : null;
     const isCat1 = catNum === 1;
     add(daysNum > 14 ? 'critical' : 'high',
-      `Extended Drying — ${daysNum} Days (Standard: 5–7 Days)`,
+      `Extended Drying â€” ${daysNum} Days (Standard: 5â€“7 Days)`,
       `Days to Dry Documented: ${daysNum} days\nCategory of Water: ${catNum || 'Unknown'}\nTotal Affected SF: ${r.totalAffectedSF || 'Unknown'}`,
       isCat1
-        ? `Category 1 (clean water) should dry the fastest — typically 3–5 days. When a Category 1 job takes ${daysNum} days, something specific caused that delay. Insurance carriers will question every day past Day 7, and without documentation explaining the delay, they can reduce your payment for those extra days. The IICRC S500 states that Category 1 water with normal evaporation load should reach dry standard in the typical 3–5 day window.`
-        : `Standard water damage jobs are expected to reach dry standard within 5–7 days. At ${daysNum} days, this job is ${(daysNum-7).toFixed(1)} days over that window. Without documented authorization from the adjuster for the extra days, the carrier can — and often will — reduce payment for the time beyond 7 days.`,
+        ? `Category 1 (clean water) should dry the fastest â€” typically 3â€“5 days. When a Category 1 job takes ${daysNum} days, something specific caused that delay. Insurance carriers will question every day past Day 7, and without documentation explaining the delay, they can reduce your payment for those extra days. The IICRC S500 states that Category 1 water with normal evaporation load should reach dry standard in the typical 3â€“5 day window.`
+        : `Standard water damage jobs are expected to reach dry standard within 5â€“7 days. At ${daysNum} days, this job is ${(daysNum-7).toFixed(1)} days over that window. Without documented authorization from the adjuster for the extra days, the carrier can â€” and often will â€” reduce payment for the time beyond 7 days.`,
       `1. Find the diary notes that explain WHY drying took longer (demolition delays, equipment issues, asbestos/lead holds, access problems).\n2. Confirm there is a documented call or email to the adjuster authorizing the extended drying days.\n3. If no authorization exists, contact the adjuster now and get written approval. Document it in the diary immediately.\n4. ${isCat1 ? 'For Category 1: note specifically what caused the extended timeline (Class 4 materials, late access, pending testing, etc.).' : ''}`,
-      'IICRC S500 Section 13 — Drying Goals and Timelines');
+      'IICRC S500 Section 13 â€” Drying Goals and Timelines');
   }
 
-  // ── R-007: Category of Water vs. Cause of Loss ───────────────────────────
+  // â”€â”€ R-007: Category of Water vs. Cause of Loss â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const cause = (r.causeOfLoss || '').toLowerCase();
   const catDoc = r.categoryDoc ? parseInt(r.categoryDoc) : null;
   let catSuggestion = null;
@@ -708,149 +708,149 @@ function runRules(r) {
   } else if (/sewage|sewer|black water|septic|toilet.*backup|backup.*sewer/i.test(cause)) {
     catSuggestion = 3;
   } else if (/other|unknown/i.test(cause) || !cause) {
-    add('medium', 'Cause of Loss is Vague — Category Cannot Be Verified',
+    add('medium', 'Cause of Loss is Vague â€” Category Cannot Be Verified',
       `Cause of Loss documented as: "${r.causeOfLoss || 'Not entered'}"`,
       'The cause of loss determines what Category of Water the job should be. "Other" or a vague description makes it impossible to verify the Category. Carriers can challenge the Category if it isn\'t backed by a clear source description. Category affects what cleaning protocols are required and how much work is defensible.',
       'Update the Cause of Loss to be specific. Examples: "Toilet supply line failure," "Toilet bowl overflow," "Washing machine overflow," "Failed refrigerator ice maker line." The more specific, the better.',
-      'IICRC S500 Section 6 — Water Categories');
+      'IICRC S500 Section 6 â€” Water Categories');
   }
   if (catSuggestion !== null && catDoc !== null && catSuggestion !== catDoc) {
-    add('high', `Category of Water May Be Incorrect — Should Be Category ${catSuggestion}`,
+    add('high', `Category of Water May Be Incorrect â€” Should Be Category ${catSuggestion}`,
       `Cause of Loss: "${r.causeOfLoss}"\nCategory Documented: ${catDoc}\nExpected Category Based on Source: ${catSuggestion}`,
       catSuggestion === 1
-        ? `The source described (${r.causeOfLoss}) carries clean, fresh water. Per IICRC S500, this is Category 1 water — the cleanest type. Documenting it as Category ${catDoc} overstates the contamination level without justification. If a carrier's expert reviews this, they may use it to argue the documentation is inaccurate.`
+        ? `The source described (${r.causeOfLoss}) carries clean, fresh water. Per IICRC S500, this is Category 1 water â€” the cleanest type. Documenting it as Category ${catDoc} overstates the contamination level without justification. If a carrier's expert reviews this, they may use it to argue the documentation is inaccurate.`
         : catSuggestion === 2
-        ? `The source described suggests Category 2 (gray water) — water that has some contamination. The Category documented is ${catDoc}. Make sure the Category matches what the source actually was.`
+        ? `The source described suggests Category 2 (gray water) â€” water that has some contamination. The Category documented is ${catDoc}. Make sure the Category matches what the source actually was.`
         : `The source described suggests Category 3 (black water / sewage). This is the highest and most hazardous category. If Category 3 is correct, make sure all PPE, containment, and cleaning protocols are documented.`,
       catSuggestion === 1 && catDoc === 2
-        ? `If the water source was truly a clean supply line, change the Category to 1. Exception: if water sat for more than 48 hours before arrival, it may have grown bacteria and a Category 2 upgrade is justified — but that justification MUST be written in the diary notes with the date of loss and date of arrival clearly shown.`
+        ? `If the water source was truly a clean supply line, change the Category to 1. Exception: if water sat for more than 48 hours before arrival, it may have grown bacteria and a Category 2 upgrade is justified â€” but that justification MUST be written in the diary notes with the date of loss and date of arrival clearly shown.`
         : `Review the cause of loss and confirm the Category matches. Document the reason for the Category in the diary notes.`,
-      'IICRC S500 Section 6 — Water Source Categories (Table 6-1)');
+      'IICRC S500 Section 6 â€” Water Source Categories (Table 6-1)');
   }
 
-  // ── R-008: Cat 2/3 Pre-Cleaning Before Air Movers ────────────────────────
+  // â”€â”€ R-008: Cat 2/3 Pre-Cleaning Before Air Movers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (catDoc && catDoc >= 2 && !r.antimicrobialMentioned) {
-    add('high', `Category ${catDoc} Water — No Pre-Cleaning Documented Before Air Movers`,
+    add('high', `Category ${catDoc} Water â€” No Pre-Cleaning Documented Before Air Movers`,
       `Water Category documented: ${catDoc}\nAntimicrobial/cleaning documented: NO`,
       `For Category 2 and Category 3 water, the IICRC S500 requires that affected surfaces be cleaned and treated with an antimicrobial agent BEFORE rapid air movement is used. Turning on air movers without cleaning first can spread contaminated particles through the air and to other surfaces. If this isn't documented, a carrier or plaintiff's attorney can argue that SERVPRO spread contamination throughout the property.`,
       `Add a diary note stating: "Affected surfaces were cleaned and antimicrobial [product name] was applied to [list surfaces] prior to initiating air movement on [date and time]." If this was actually done but not documented, correct the records immediately.`,
-      'IICRC S500 Section 12.3 — Category 2 and 3 Response Procedures');
+      'IICRC S500 Section 12.3 â€” Category 2 and 3 Response Procedures');
   }
 
-  // ── R-009: Zone Dehu Sizing ──────────────────────────────────────────────
+  // â”€â”€ R-009: Zone Dehu Sizing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   r.zones.forEach((z, i) => {
     if (z.dehuMin !== null && z.dehuAct !== null) {
       if (z.dehuAct === 0 && z.dehuMin > 0) {
-        add('critical', `Zone ${z.zoneNum} — NO Dehumidifier Placed (${z.dehuMin} PPD Required)`,
+        add('critical', `Zone ${z.zoneNum} â€” NO Dehumidifier Placed (${z.dehuMin} PPD Required)`,
           `Zone ${z.zoneNum} Minimum Required: ${z.dehuMin} PPD\nActual Placed: 0 PPD\nShortfall: ${z.dehuMin} PPD (100% short)`,
           'Without a dehumidifier, moisture that evaporates from wet materials has nowhere to go. It will re-absorb into walls, ceilings, and building materials, causing mold growth and extending drying time indefinitely. This zone cannot dry properly without dehumidification.',
           `Place a dehumidifier in Zone ${z.zoneNum} with a minimum capacity of ${z.dehuMin} PPD. If power was the issue, document the exact breaker amperage, how many circuits are available, and what steps were taken (or will be taken) to get power to this zone. Contact an electrician and document that call.`,
-          'IICRC S500 Section 14 — Dehumidification Requirements');
+          'IICRC S500 Section 14 â€” Dehumidification Requirements');
       } else if (z.dehuAct < z.dehuMin) {
         const short = (z.dehuMin - z.dehuAct).toFixed(0);
-        add('high', `Zone ${z.zoneNum} — Dehumidifier Undersized by ${short} PPD`,
+        add('high', `Zone ${z.zoneNum} â€” Dehumidifier Undersized by ${short} PPD`,
           `Zone ${z.zoneNum} Minimum Required: ${z.dehuMin} PPD\nActual Placed: ${z.dehuAct} PPD\nShortfall: ${short} PPD`,
-          `The dehumidifier placed in this zone cannot remove moisture fast enough. An undersized dehu means moisture stays in the air and re-absorbs back into building materials. This slows drying and extends the number of days equipment is needed — which the carrier will question.`,
+          `The dehumidifier placed in this zone cannot remove moisture fast enough. An undersized dehu means moisture stays in the air and re-absorbs back into building materials. This slows drying and extends the number of days equipment is needed â€” which the carrier will question.`,
           `Add a second dehumidifier or replace the current one with a unit rated at least ${z.dehuMin} PPD. Update the diary notes with the reason a smaller unit was initially placed, and document when the correction was made.`,
-          'IICRC S500 Section 14.2 — Dehumidifier Sizing');
+          'IICRC S500 Section 14.2 â€” Dehumidifier Sizing');
       }
     }
   });
 
-  // ── R-010: Zone Air Mover Sizing ─────────────────────────────────────────
+  // â”€â”€ R-010: Zone Air Mover Sizing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   r.zones.forEach(z => {
     if (z.amReqMin !== null && z.amPlaced !== null && z.amPlaced < z.amReqMin) {
-      add('high', `Zone ${z.zoneNum} — Air Movers Undersized (${z.amPlaced} placed, ${z.amReqRaw} required)`,
+      add('high', `Zone ${z.zoneNum} â€” Air Movers Undersized (${z.amPlaced} placed, ${z.amReqRaw} required)`,
         `Zone ${z.zoneNum} Air Movers Required: ${z.amReqRaw}\nAir Movers Placed: ${z.amPlaced}\nShortfall: ${z.amReqMin - z.amPlaced} units minimum`,
         'Too few air movers means surfaces dry unevenly. Wet spots that aren\'t reached by airflow will stay wet long after the rest of the room is dry, leading to hidden mold growth and an extended billing period the carrier may not pay.',
         `Add ${z.amReqMin - z.amPlaced} more air movers to Zone ${z.zoneNum} to meet the minimum requirement. Position them to cover all wet wall and floor surfaces. Document the addition in the diary with the exact placement.`,
-        'IICRC S500 Section 14.3 — Air Mover Placement');
+        'IICRC S500 Section 14.3 â€” Air Mover Placement');
     }
   });
 
-  // ── R-011: Class of Water vs. Affected % ─────────────────────────────────
+  // â”€â”€ R-011: Class of Water vs. Affected % â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const classDoc = r.classDoc ? parseInt(r.classDoc) : null;
   const pctValues = r.zones.map(z => z.affectedPct).filter(p => p !== null);
   const avgPct = pctValues.length ? pctValues.reduce((a,b)=>a+b,0)/pctValues.length : null;
   if (avgPct !== null && classDoc !== null) {
     let expectedClass = avgPct < 5 ? 1 : avgPct < 40 ? 2 : 3;
     if (Math.abs(expectedClass - classDoc) >= 1) {
-      add('medium', `Class of Water May Be Incorrect — Documented: Class ${classDoc}, Expected: Class ${expectedClass}`,
+      add('medium', `Class of Water May Be Incorrect â€” Documented: Class ${classDoc}, Expected: Class ${expectedClass}`,
         `Average Affected Surface Area: ${avgPct.toFixed(0)}%\nClass Documented: ${classDoc}\nClass Expected (Based on S500 %): ${expectedClass}`,
         `The IICRC S500 defines water classes by what percentage of surfaces (floor + walls + ceiling combined) are wet. Based on the affected percentages in this report, Class ${expectedClass} appears more appropriate than the documented Class ${classDoc}.`,
         `Review each zone's affected surface percentages and confirm the Class. The correct Class affects drying time expectations and equipment justification. Document the Class selection in the diary notes with the percentage calculation.`,
-        'IICRC S500 Section 5 — Classification of Water Intrusion');
+        'IICRC S500 Section 5 â€” Classification of Water Intrusion');
     }
   }
 
-  // ── R-012: Class 4 — Framing in Materials ────────────────────────────────
+  // â”€â”€ R-012: Class 4 â€” Framing in Materials â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const hasFraming  = /[Ff]raming|[Ss]tud/i.test(r.rawText);
   const hasConcrete = /[Cc]oncrete.*(?:[Ff]loor|[Ww]all)|(?:[Ff]loor|[Ww]all).*[Cc]oncrete/i.test(r.rawText);
   const hasPlaster  = /[Pp]laster/i.test(r.rawText);
   const waterSatDays = r.dateOfLoss && r.siteInspected ? (r.siteInspected - r.dateOfLoss) / 86400000 : 0;
 
   if (hasFraming && classDoc && classDoc < 4) {
-    add('medium', `Class 4 Consideration — Wood Framing Documented in Material Readings`,
+    add('medium', `Class 4 Consideration â€” Wood Framing Documented in Material Readings`,
       `Wood framing/studs appear in the material readings.\nWater sat approximately ${waterSatDays.toFixed(1)} days before arrival.\nCurrent Class documented: ${classDoc}`,
       waterSatDays >= 2
-        ? `Wood framing studs are a "low evaporation material" as defined by IICRC S500. When framing absorbs water (especially after sitting for ${waterSatDays.toFixed(1)} days), it qualifies as Class 4 — deeply held water that requires longer drying times, higher equipment settings, and possibly special drying techniques. Class 4 justifies extended drying times to the carrier.`
-        : `Wood framing is documented in the readings. Water arrived quickly (within ${(waterSatDays*24).toFixed(0)} hours), so deep absorption is less likely — but monitor the framing readings closely. If stud moisture doesn't drop consistently, Class 4 conditions may develop.`,
+        ? `Wood framing studs are a "low evaporation material" as defined by IICRC S500. When framing absorbs water (especially after sitting for ${waterSatDays.toFixed(1)} days), it qualifies as Class 4 â€” deeply held water that requires longer drying times, higher equipment settings, and possibly special drying techniques. Class 4 justifies extended drying times to the carrier.`
+        : `Wood framing is documented in the readings. Water arrived quickly (within ${(waterSatDays*24).toFixed(0)} hours), so deep absorption is less likely â€” but monitor the framing readings closely. If stud moisture doesn't drop consistently, Class 4 conditions may develop.`,
       waterSatDays >= 2
         ? `Consider documenting this as Class 4 if framing moisture readings are significantly elevated. Add a diary note: "Wood framing studs were found wet. Water soaked for approximately ${waterSatDays.toFixed(1)} days. Per IICRC S500, this constitutes Class 4 drying conditions. Extended drying time and specialized drying methods may be required." Notify the adjuster of Class 4 conditions in writing.`
         : `Continue monitoring framing readings daily. If they are not dropping consistently toward the dry goal, upgrade to Class 4 and notify the adjuster.`,
-      'IICRC S500 Section 5.4 — Class 4 — Deeply Held or Bound Water');
+      'IICRC S500 Section 5.4 â€” Class 4 â€” Deeply Held or Bound Water');
   }
 
-  // Large loss — framing NOT checked
+  // Large loss â€” framing NOT checked
   const totalSF = r.totalAffectedSF ? parseFloat(r.totalAffectedSF.replace(/,/g,'')) : 0;
   const zoneCount = r.dryingZones ? parseInt(r.dryingZones) : 1;
   if (!hasFraming && totalSF > 300 && classDoc && classDoc >= 2) {
-    add('medium', `Class 4 Check — Framing Not Documented on a ${Math.round(totalSF)} SF Loss`,
+    add('medium', `Class 4 Check â€” Framing Not Documented on a ${Math.round(totalSF)} SF Loss`,
       `Total Affected SF: ${r.totalAffectedSF}\nZones: ${zoneCount}\nWood framing checked in material readings: NO`,
-      `On a loss of this size with Category ${r.categoryDoc || '?'} water, it is important to check whether wall framing studs absorbed moisture. If framing got wet and was not documented, it could lead to hidden mold growth and future structural issues — and a liability claim against SERVPRO.`,
+      `On a loss of this size with Category ${r.categoryDoc || '?'} water, it is important to check whether wall framing studs absorbed moisture. If framing got wet and was not documented, it could lead to hidden mold growth and future structural issues â€” and a liability claim against SERVPRO.`,
       `On the next visit, probe wall framing studs in the most heavily affected areas. If any stud reads above 19% moisture content, add it to the material readings log and note it in the diary. If studs are wet and have been wet for more than 2 days, document Class 4 conditions and notify the adjuster.`,
-      'IICRC S500 Section 5.4 — Class 4 Materials');
+      'IICRC S500 Section 5.4 â€” Class 4 Materials');
   }
 
-  // ── R-013: Concrete Progress ─────────────────────────────────────────────
+  // â”€â”€ R-013: Concrete Progress â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (hasConcrete) {
-    add('info', 'Concrete in Material Readings — Review Progress Rate',
+    add('info', 'Concrete in Material Readings â€” Review Progress Rate',
       'Concrete floor or walls appear in the material readings.',
       'Concrete is a "low evaporation" material. It will retain some residual moisture permanently and will never read completely zero. However, when water damage is caught quickly (within hours of the loss), concrete should make noticeable progress toward dry standard within the first few days. If concrete readings are barely changing or moving very slowly, it suggests the drying equipment is not creating enough of a drying environment, or the concrete absorbed a large amount of water over time before being discovered.',
-      `Check the concrete readings: Are they dropping at least 5–10% per day early in the job? If readings are stuck or barely moving, consider: (1) adding more dehumidification near the concrete, (2) checking that GDEP is above 6 on every visit, (3) documenting in the diary that concrete retains residual moisture and noting the expected final reading. Alert the adjuster if concrete is not responding to drying equipment.`,
-      'IICRC S500 Section 5.4 — Low Evaporation Materials');
+      `Check the concrete readings: Are they dropping at least 5â€“10% per day early in the job? If readings are stuck or barely moving, consider: (1) adding more dehumidification near the concrete, (2) checking that GDEP is above 6 on every visit, (3) documenting in the diary that concrete retains residual moisture and noting the expected final reading. Alert the adjuster if concrete is not responding to drying equipment.`,
+      'IICRC S500 Section 5.4 â€” Low Evaporation Materials');
   }
 
-  // ── R-014: HVAC — On Day Without Readings ────────────────────────────────
+  // â”€â”€ R-014: HVAC â€” On Day Without Readings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // If HVAC is not documented as "off" on a visit day, readings should exist
   // We flag this via AI analysis rather than hard rule due to parsing complexity
 
-  // ── R-015: Power Issues — Need Specifics ─────────────────────────────────
+  // â”€â”€ R-015: Power Issues â€” Need Specifics â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (r.powerIssues) {
-    add('medium', 'Power Issues Documented — Additional Detail Required',
+    add('medium', 'Power Issues Documented â€” Additional Detail Required',
       'Diary notes mention power issues, breaker problems, or spider box limitations.',
-      'When power issues prevent dehumidifiers from being placed, that is a legitimate reason — but the documentation must be specific enough to satisfy an insurance carrier. A carrier that sees "power issues" with no details will question why the problem wasn\'t fixed and may reduce payment for zones without dehumidification.',
+      'When power issues prevent dehumidifiers from being placed, that is a legitimate reason â€” but the documentation must be specific enough to satisfy an insurance carrier. A carrier that sees "power issues" with no details will question why the problem wasn\'t fixed and may reduce payment for zones without dehumidification.',
       `Add a diary note with ALL of the following: (1) The exact location of the breaker panel, (2) The total amperage available (e.g., "100-amp panel"), (3) Which circuits were already in use and how many amps they draw, (4) Confirmation that a spider box was brought in or ordered, (5) The amperage capacity of the spider box used, (6) The date and time power was restored to each affected zone, (7) Whether an electrician was called (if so, document their name and company).`,
       null);
   }
 
-  // ── R-016: Missing Monitoring — Split by Section ─────────────────────────
+  // â”€â”€ R-016: Missing Monitoring â€” Split by Section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const { gaps, atmosphericDays, dehuDays, materialDays } = r;
   const allGaps = gaps || [];
   if (allGaps.length > 0) {
-    const gapDescriptions = allGaps.map(g => `${g.from} → ${g.to} (${g.days}-day gap)`).join('\n');
-    add('high', `Missing Monitoring Days — ${allGaps.length} Gap(s) Identified`,
-      `Monitoring gaps found:\n${gapDescriptions}\n\nNote: The following sections must be checked for missing entries in each gap:\n• Atmospheric Readings (Outside, Unaffected, Zone temps/RH/GPP)\n• Dehumidifier Readings (Temp, RH, GPP, GDEP, Hours)\n• Material Moisture Content Readings (per material per room)`,
+    const gapDescriptions = allGaps.map(g => `${g.from} â†’ ${g.to} (${g.days}-day gap)`).join('\n');
+    add('high', `Missing Monitoring Days â€” ${allGaps.length} Gap(s) Identified`,
+      `Monitoring gaps found:\n${gapDescriptions}\n\nNote: The following sections must be checked for missing entries in each gap:\nâ€¢ Atmospheric Readings (Outside, Unaffected, Zone temps/RH/GPP)\nâ€¢ Dehumidifier Readings (Temp, RH, GPP, GDEP, Hours)\nâ€¢ Material Moisture Content Readings (per material per room)`,
       `Daily monitoring is required every day equipment is running. The IICRC S500 requires that technicians document drying progress through regular readings of the affected zone's temperature, humidity, and moisture content. When days are skipped, there is no proof of what was happening in the building. A carrier that sees a 3-day or 5-day gap in readings can argue that: (1) no one was monitoring the job, (2) equipment may have been off, or (3) drying progress cannot be verified for those days.`,
-      `For every gap listed above:\n1. Atmospheric Readings — was Outside/Unaffected/Zone temperature and GPP recorded on every day? If not, document why (e.g., "Readings unavailable on [date] — customer did not grant access").\n2. Dehumidifier Readings — was GDEP and hour counter recorded every visit? Check the hour counter to confirm the dehu was actually running during the gap.\n3. Material Moisture Readings — was every material probed and recorded on every visit day? If materials were not read on a specific day, note the reason.\n\nIf readings were taken but not entered into DryBooks, enter them immediately with a note that they are late entries.`,
-      'IICRC S500 Section 13.2 — Daily Monitoring Documentation');
+      `For every gap listed above:\n1. Atmospheric Readings â€” was Outside/Unaffected/Zone temperature and GPP recorded on every day? If not, document why (e.g., "Readings unavailable on [date] â€” customer did not grant access").\n2. Dehumidifier Readings â€” was GDEP and hour counter recorded every visit? Check the hour counter to confirm the dehu was actually running during the gap.\n3. Material Moisture Readings â€” was every material probed and recorded on every visit day? If materials were not read on a specific day, note the reason.\n\nIf readings were taken but not entered into DryBooks, enter them immediately with a note that they are late entries.`,
+      'IICRC S500 Section 13.2 â€” Daily Monitoring Documentation');
   }
 
-  // ── R-017: No Adjuster Contact Documented ────────────────────────────────
+  // â”€â”€ R-017: No Adjuster Contact Documented â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (r.adjusterMentions < 2 && daysNum && daysNum > 5) {
     add('critical', 'No Adjuster Contact Found in Diary Notes',
       `Adjuster mentions in entire report: ${r.adjusterMentions}\nAuthorization mentions: ${r.authMentions}\nDays to Dry: ${daysNum}`,
-      `On a job that ran ${daysNum} days, there should be documented communication with the adjuster — at minimum, a call or email confirming coverage and authorizing the scope of work. Without this, the carrier has no obligation to pay for anything beyond their own assessment of what was reasonable.`,
+      `On a job that ran ${daysNum} days, there should be documented communication with the adjuster â€” at minimum, a call or email confirming coverage and authorizing the scope of work. Without this, the carrier has no obligation to pay for anything beyond their own assessment of what was reasonable.`,
       `Immediately document all adjuster communications that happened during this job. Add diary entries for: (1) The adjuster's name and contact number, (2) Date and time of every call or email, (3) What was discussed (scope, authorization, coverage questions), (4) Any written approval received. If no adjuster contact was made, contact the adjuster today and request authorization for the completed scope.`,
       null);
   } else if (r.authMentions === 0 && daysNum && daysNum > 7) {
@@ -858,47 +858,47 @@ function runRules(r) {
       `Days to Dry: ${daysNum} (over 7-day standard)\nWritten authorization mentions: 0`,
       'Drying beyond 7 days requires carrier authorization. Without it, the carrier can refuse to pay for the extra days. Even if the adjuster verbally approved it, verbal approval with no written record is not defensible.',
       'Add a diary entry documenting written authorization from the adjuster for drying beyond 7 days. If authorization was given by phone, document: "On [date] at [time], I spoke with Adjuster [Name] at [phone]. They authorized drying to continue through [date] pending [reason]."',
-      'IICRC S500 Section 7.3 — Communication with Property Owner and Insurer');
+      'IICRC S500 Section 7.3 â€” Communication with Property Owner and Insurer');
   }
 
-  // ── R-018: Active Leak Not Resolved ──────────────────────────────────────
+  // â”€â”€ R-018: Active Leak Not Resolved â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (r.activeLeak) {
-    add('critical', 'Active Water Source Not Resolved — Drying Cannot Succeed',
+    add('critical', 'Active Water Source Not Resolved â€” Drying Cannot Succeed',
       'Diary notes document that the water source (leak) was still active during the job.',
       'This is a fundamental problem. You cannot dry a building that is still getting wet. Running drying equipment with an active leak is not only ineffective, it\'s documenting that SERVPRO continued billing for equipment while knowing the drying couldn\'t succeed. Carriers will use this to reduce or deny payment.',
       `Add diary entries documenting: (1) The date the leak was confirmed active, (2) Who was notified (homeowner, adjuster, plumber), (3) The date a plumber was confirmed on-site and the leak was repaired, (4) The date drying was able to begin effectively. Drying days should not be billed from before the source was repaired unless equipment was placed for protective reasons, which must be documented.`,
       null);
   }
 
-  // ── R-019: Asbestos / Lead — Demolition Held ─────────────────────────────
+  // â”€â”€ R-019: Asbestos / Lead â€” Demolition Held â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (r.asbestosFlag || r.leadFlag) {
     const bothFlags = r.asbestosFlag && r.leadFlag;
-    add('medium', `${bothFlags ? 'Asbestos and Lead' : r.asbestosFlag ? 'Asbestos' : 'Lead Paint'} Testing Required — Demolition Impact`,
+    add('medium', `${bothFlags ? 'Asbestos and Lead' : r.asbestosFlag ? 'Asbestos' : 'Lead Paint'} Testing Required â€” Demolition Impact`,
       `${r.asbestosFlag ? 'Asbestos testing noted in diary.\n' : ''}${r.leadFlag ? 'Lead paint testing noted in diary.' : ''}`,
       `When asbestos or lead testing is required before demolition, it creates a legitimate hold on the mitigation work. However, this delay must be documented clearly so the carrier understands why drying took longer. Without documentation, a carrier will see a long drying time with no explanation.`,
       `Document in the diary: (1) The date testing was ordered, (2) The company performing the test and their contact info, (3) The date results were received, (4) What the results showed, (5) How that affected the scope of work. Keep a copy of all test results attached to the job file.`,
       null);
   }
 
-  // ── R-020: Unexplained Class Override ────────────────────────────────────
+  // â”€â”€ R-020: Unexplained Class Override â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (r.hasClassOverride) {
-    add('medium', 'Water Class Was Manually Overridden — Explanation Required',
+    add('medium', 'Water Class Was Manually Overridden â€” Explanation Required',
       'A "Zone Water Class Override" entry was found in the diary notes.',
-      'Manually changing the water class after the initial assessment is allowable — but it must be explained. A carrier that sees a class override with no explanation will question whether the job was documented accurately.',
+      'Manually changing the water class after the initial assessment is allowable â€” but it must be explained. A carrier that sees a class override with no explanation will question whether the job was documented accurately.',
       'Add a diary note explaining why the class was overridden. For example: "Class was updated from Class 2 to Class 3 on [date] after finding that more than 40% of the ceiling was also affected upon demolition."',
-      'IICRC S500 Section 5 — Water Classification');
+      'IICRC S500 Section 5 â€” Water Classification');
   }
 
-  // ── R-021: ES Immediate Notifications ────────────────────────────────────
+  // â”€â”€ R-021: ES Immediate Notifications â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (r.esNotifications > 0) {
-    add('medium', `${r.esNotifications} ES Immediate Notification(s) — Follow-Up Required`,
+    add('medium', `${r.esNotifications} ES Immediate Notification(s) â€” Follow-Up Required`,
       `ES Immediate Notifications logged: ${r.esNotifications}`,
-      'ES Immediate Notifications are system-generated flags indicating something requires urgent attention. If these are not addressed and documented, they show up in the client-facing record as unresolved issues — which a carrier can use to question the quality of the work.',
+      'ES Immediate Notifications are system-generated flags indicating something requires urgent attention. If these are not addressed and documented, they show up in the client-facing record as unresolved issues â€” which a carrier can use to question the quality of the work.',
       'For each ES Notification: find what triggered it, add a diary note explaining what action was taken in response, and confirm the issue was resolved.',
       null);
   }
 
-  // ── R-022: EMS Limit Exceeded ────────────────────────────────────────────
+  // â”€â”€ R-022: EMS Limit Exceeded â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (r.emsExceeded) {
     add('medium', 'EMS (Electronic Moisture System) Limit Exceeded',
       'The DryBooks system flagged that EMS limits were exceeded.',
@@ -907,23 +907,23 @@ function runRules(r) {
       null);
   }
 
-  // ── R-023: In-Place Drying Not Performed on Cat 1 ────────────────────────
+  // â”€â”€ R-023: In-Place Drying Not Performed on Cat 1 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (r.inPlaceDryingFlag) {
-    add('info', 'In-Place Drying Flag — Category Conflict Noted',
+    add('info', 'In-Place Drying Flag â€” Category Conflict Noted',
       'The system flagged "In-place drying not performed on CAT 1."',
       'This flag appears when materials that could be dried in place (Category 1, minor intrusion) were removed instead. While demolition is sometimes necessary, this flag indicates the system expected in-place drying. The decision to remove materials must be documented and justified.',
       'Add a diary note explaining why in-place drying was not performed and demolition was chosen instead. For example: "In-place drying was not performed because asbestos testing was required" or "Material was too saturated for effective in-place drying after [X] days of soaking."',
       null);
   }
 
-  // ── R-024: Identical Readings Across Multiple Materials (Fabrication) ─────
-  // This is detected by AI — flagged here as info for AI to investigate
+  // â”€â”€ R-024: Identical Readings Across Multiple Materials (Fabrication) â”€â”€â”€â”€â”€
+  // This is detected by AI â€” flagged here as info for AI to investigate
   // The AI prompt will specifically look for this pattern
 
   return findings;
 }
 
-// ─── Render Results ───────────────────────────────────────────────────────────
+// â”€â”€â”€ Render Results â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 let _findings = [];   // stored globally so filter can re-render without re-running rules
 let _findingSort = 'document'; // 'document' | 'severity'
 
@@ -948,12 +948,12 @@ function renderResults(r, findings) {
 
   const contactLabel = contactMin === null ? 'No Data'
     : contactMin < 0  ? 'Bad Timestamp'
-    : contactMin <= 60 ? `${contactMin} min ✓`
-    : `${contactMin} min ✗`;
+    : contactMin <= 60 ? `${contactMin} min âœ“`
+    : `${contactMin} min âœ—`;
   const siteLabel = siteMin === null ? 'No Data'
     : siteMin < 0  ? 'Bad Timestamp'
-    : siteMin <= 240 ? `${(siteMin/60).toFixed(1)} hrs ✓`
-    : `${(siteMin/60).toFixed(1)} hrs ✗`;
+    : siteMin <= 240 ? `${(siteMin/60).toFixed(1)} hrs âœ“`
+    : `${(siteMin/60).toFixed(1)} hrs âœ—`;
 
   // Solid green / red for high visibility in the title bar
   const contactBg = contactMin === null ? '#2e3350'    : contactOk ? '#16a34a' : '#dc2626';
@@ -965,7 +965,7 @@ function renderResults(r, findings) {
   <div class="score-bar" style="flex-wrap:wrap;gap:16px;">
     <div class="score-circle" style="border-color:${scoreColor};color:${scoreColor}">${score}</div>
     <div class="score-info" style="flex:1;min-width:200px;">
-      <h3>${r.customerName || 'Unknown Customer'} — ${r.insuranceClient || 'Unknown Carrier'}</h3>
+      <h3>${r.customerName || 'Unknown Customer'} â€” ${r.insuranceClient || 'Unknown Carrier'}</h3>
       <p>Claim: ${r.claimNumber || 'N/A'} &nbsp;|&nbsp; Project: ${r.projectNumber || 'N/A'}</p>
       <div class="counts">
         ${critCount ? `<span class="count-badge" style="background:rgba(239,68,68,.2);color:#f87171">${critCount} Critical</span>` : ''}
@@ -976,12 +976,12 @@ function renderResults(r, findings) {
     </div>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
       <div style="text-align:center;">
-        <div style="font-size:.65rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px;">Loss → Contact</div>
+        <div style="font-size:.65rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px;">Loss â†’ Contact</div>
         <div style="background:${contactBg};color:${contactTxt};font-weight:800;font-size:.95rem;padding:7px 14px;border-radius:8px;white-space:nowrap;">${contactLabel}</div>
         <div style="font-size:.6rem;color:var(--muted);margin-top:3px;">Limit: 60 min</div>
       </div>
       <div style="text-align:center;">
-        <div style="font-size:.65rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px;">Loss → On-Site</div>
+        <div style="font-size:.65rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px;">Loss â†’ On-Site</div>
         <div style="background:${siteBg};color:${siteTxt};font-weight:800;font-size:.95rem;padding:7px 14px;border-radius:8px;white-space:nowrap;">${siteLabel}</div>
         <div style="font-size:.6rem;color:var(--muted);margin-top:3px;">Limit: 4 hrs</div>
       </div>
@@ -997,23 +997,23 @@ function renderResults(r, findings) {
     <div class="report-header-item"><label>Drying Zones</label><value>${r.dryingZones || '?'}</value></div>
   </div>`;
 
-  // ── Sort filter bar ────────────────────────────────────────────────────────
+  // â”€â”€ Sort filter bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   html += `
   <div style="display:flex;align-items:center;gap:10px;margin:20px 0 4px;flex-wrap:wrap;">
     <span style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);">Sort findings:</span>
-    <button id="sort-doc" class="btn btn-primary" style="font-size:.8rem;padding:5px 14px;" onclick="setFindingSort('document')">📄 Document Order</button>
-    <button id="sort-sev" class="btn" style="font-size:.8rem;padding:5px 14px;" onclick="setFindingSort('severity')">🚨 By Severity</button>
+    <button id="sort-doc" class="btn btn-primary" style="font-size:.8rem;padding:5px 14px;" onclick="setFindingSort('document')">ðŸ“„ Document Order</button>
+    <button id="sort-sev" class="btn" style="font-size:.8rem;padding:5px 14px;" onclick="setFindingSort('severity')">ðŸš¨ By Severity</button>
   </div>`;
 
-  // ── Findings container (re-rendered by setFindingSort) ─────────────────────
+  // â”€â”€ Findings container (re-rendered by setFindingSort) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   html += `<div id="findings-list"></div>`;
 
   // AI section placeholder
   html += `
-  <div class="section-title">🤖 AI Quality Control &amp; Training Review</div>
+  <div class="section-title">ðŸ¤– AI Quality Control &amp; Training Review</div>
   <div class="ai-section" id="ai-section">
-    <h3><span class="ai-spinner"></span> Running AI analysis — this takes 15–30 seconds…</h3>
-    <p style="font-size:.8rem;color:var(--muted);margin-top:8px;">Reviewing Category, Class, timeline, equipment performance, monitoring gaps, readings integrity, adjuster communication, and generating training takeaways…</p>
+    <h3><span class="ai-spinner"></span> Running AI analysis â€” this takes 15â€“30 secondsâ€¦</h3>
+    <p style="font-size:.8rem;color:var(--muted);margin-top:8px;">Reviewing Category, Class, timeline, equipment performance, monitoring gaps, readings integrity, adjuster communication, and generating training takeawaysâ€¦</p>
     <div class="ai-content" id="ai-content"></div>
   </div>`;
 
@@ -1031,17 +1031,17 @@ function setFindingSort(mode) {
 }
 
 function renderFindingsList(mode) {
-  const sevLabel = { critical:'🚨 Critical', high:'⚠️ High', medium:'📋 Medium', info:'ℹ️ Info', pass:'✅ Pass' };
+  const sevLabel = { critical:'ðŸš¨ Critical', high:'âš ï¸ High', medium:'ðŸ“‹ Medium', info:'â„¹ï¸ Info', pass:'âœ… Pass' };
   let html = '';
 
   if (mode === 'severity') {
     const sevOrder = ['critical','high','medium','info','pass'];
     const sevTitles = {
-      critical: '🚨 Critical — Fix Before This Job Is Reviewed',
-      high:     '⚠️ High Priority Issues',
-      medium:   '📋 Medium Priority — Needs Documentation',
-      info:     'ℹ️ Informational Notes',
-      pass:     '✅ Checks Passed'
+      critical: 'ðŸš¨ Critical â€” Fix Before This Job Is Reviewed',
+      high:     'âš ï¸ High Priority Issues',
+      medium:   'ðŸ“‹ Medium Priority â€” Needs Documentation',
+      info:     'â„¹ï¸ Informational Notes',
+      pass:     'âœ… Checks Passed'
     };
     sevOrder.forEach(sev => {
       const group = _findings.filter(f => f.severity === sev);
@@ -1053,7 +1053,7 @@ function renderFindingsList(mode) {
       });
     });
   } else {
-    html += `<div class="section-title">📋 Report Findings — Document Order (Page 1 → End)</div>`;
+    html += `<div class="section-title">ðŸ“‹ Report Findings â€” Document Order (Page 1 â†’ End)</div>`;
     _findings.forEach((f, idx) => {
       html += buildFindingCard(f, `f-doc-${idx}`, sevLabel);
     });
@@ -1079,12 +1079,12 @@ function buildFindingCard(f, uid, sevLabel) {
     <div class="finding-header" onclick="toggleFinding('${uid}')">
       <span class="finding-badge">${sevLabel[f.severity] || f.severity}</span>
       <span class="finding-title">${f.title}</span>
-      <span class="finding-toggle">▼ Details</span>
+      <span class="finding-toggle">â–¼ Details</span>
     </div>
     <div class="finding-body">`;
-  if (f.what)   html += `<div class="finding-what"><label>📌 What Was Found</label><p>${f.what.replace(/\n/g,'<br>')}</p></div>`;
-  if (f.why)    html += `<div class="finding-why"><label>❓ Why This Matters</label><p>${f.why.replace(/\n/g,'<br>')}${f.s500ref?`<br><span class="s500-ref">📖 ${f.s500ref}</span>`:''}</p></div>`;
-  if (f.action) html += `<div class="finding-action"><label>✅ What To Do</label><p>${f.action.replace(/\n/g,'<br>')}</p></div>`;
+  if (f.what)   html += `<div class="finding-what"><label>ðŸ“Œ What Was Found</label><p>${f.what.replace(/\n/g,'<br>')}</p></div>`;
+  if (f.why)    html += `<div class="finding-why"><label>â“ Why This Matters</label><p>${f.why.replace(/\n/g,'<br>')}${f.s500ref?`<br><span class="s500-ref">ðŸ“– ${f.s500ref}</span>`:''}</p></div>`;
+  if (f.action) html += `<div class="finding-action"><label>âœ… What To Do</label><p>${f.action.replace(/\n/g,'<br>')}</p></div>`;
   html += `</div></div>`;
   return html;
 }
@@ -1094,7 +1094,7 @@ function toggleFinding(id) {
   if (el) el.classList.toggle('open');
 }
 
-// ─── AI Analysis ──────────────────────────────────────────────────────────────
+// â”€â”€â”€ AI Analysis â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function runAI(report, findings) {
   const s = loadSettings();
   const provider = s.provider || 'worker';
@@ -1114,17 +1114,17 @@ async function runAI(report, findings) {
   const diarySnippet  = (report.diaryText || '').slice(0,3000);
 
   const prompt = `You are a senior IICRC-certified Water Damage Restoration expert, QC reviewer, AND trainer. You are reviewing a DryBooks drying report for two purposes at once:
-1. QUALITY CONTROL — flag anything that could cause a carrier to reduce or deny payment
-2. TRAINING — teach the technician WHY the standard exists and what happens in the real world when it is not followed
+1. QUALITY CONTROL â€” flag anything that could cause a carrier to reduce or deny payment
+2. TRAINING â€” teach the technician WHY the standard exists and what happens in the real world when it is not followed
 
-Your audience is technicians who are still learning the trade. Many have never read the IICRC S500. Write everything in plain English — like a mentor explaining to a smart apprentice. No jargon without explanation. When you cite the S500, quote what it actually says (paraphrased clearly) and explain what it means on the job site.
+Your audience is technicians who are still learning the trade. Many have never read the IICRC S500. Write everything in plain English â€” like a mentor explaining to a smart apprentice. No jargon without explanation. When you cite the S500, quote what it actually says (paraphrased clearly) and explain what it means on the job site.
 
 For EVERY issue you find, use this exact four-part format:
 
-  📍 WHAT WAS FOUND: [specific numbers, dates, or missing items from THIS report]
-  ✅ WHAT TO DO: [step-by-step, specific, actionable — not vague advice]
-  🔬 WHY THIS MATTERS IN RESTORATION: [explain the science or principle — what physically happens to the structure or the air if this is wrong? What are the real-world consequences for the building and for the customer?]
-  📖 IICRC S500 SAYS: [cite the specific section number and title. Paraphrase what it says clearly. Explain how it applies to what was found in this report.]
+  ðŸ“ WHAT WAS FOUND: [specific numbers, dates, or missing items from THIS report]
+  âœ… WHAT TO DO: [step-by-step, specific, actionable â€” not vague advice]
+  ðŸ”¬ WHY THIS MATTERS IN RESTORATION: [explain the science or principle â€” what physically happens to the structure or the air if this is wrong? What are the real-world consequences for the building and for the customer?]
+  ðŸ“– IICRC S500 SAYS: [cite the specific section number and title. Paraphrase what it says clearly. Explain how it applies to what was found in this report.]
 
 ---
 
@@ -1160,78 +1160,78 @@ ${diarySnippet}
 
 Analyze this report and provide your full QC + Training review using the sections below. Use the four-part format (WHAT WAS FOUND / WHAT TO DO / WHY THIS MATTERS / S500 SAYS) for every issue. If a section has no issues, briefly state what was done correctly and why that's important.
 
-═══════════════════════════════════════
-📊 CATEGORY OF WATER
-═══════════════════════════════════════
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+ðŸ“Š CATEGORY OF WATER
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 Review the cause of loss vs. the documented Category (1, 2, or 3). Is it correct?
 If Category 2 or 3: was antimicrobial treatment documented BEFORE air movers ran?
-Training angle: Explain what each Category means physically — what is IN the water, why it matters for the technician's safety, and why it determines the cleaning protocol required before drying begins.
+Training angle: Explain what each Category means physically â€” what is IN the water, why it matters for the technician's safety, and why it determines the cleaning protocol required before drying begins.
 
-═══════════════════════════════════════
-📏 CLASS OF WATER
-═══════════════════════════════════════
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+ðŸ“ CLASS OF WATER
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 Review the affected surface percentages against the S500 Class definitions.
 Check for Class 4 materials: concrete, wood framing studs, plaster, masonry, hardwood subfloor.
-Training angle: Explain what Class means — it is about how MUCH of the structure is wet and how DEEP the water has penetrated. Explain why Class 4 matters — low-evaporation materials like concrete and framing hold water tightly and take much longer to dry. If Class 4 is missed, the job will look "done" when it is not.
+Training angle: Explain what Class means â€” it is about how MUCH of the structure is wet and how DEEP the water has penetrated. Explain why Class 4 matters â€” low-evaporation materials like concrete and framing hold water tightly and take much longer to dry. If Class 4 is missed, the job will look "done" when it is not.
 
-═══════════════════════════════════════
-⏱️ TIMELINE & RESPONSE
-═══════════════════════════════════════
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+â±ï¸ TIMELINE & RESPONSE
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 Review all timestamps for accuracy, completeness, and sequence.
 Flag anything missing, out of order, or beyond the response time limits.
-Training angle: Explain WHY response time matters beyond billing — water damage progresses in stages. In the first 24 hours, swelling begins. By 48 hours, mold can start. By 72 hours, Category 1 water can degrade to Category 2 due to bacterial growth. Speed of response directly determines how much of the structure can be saved.
+Training angle: Explain WHY response time matters beyond billing â€” water damage progresses in stages. In the first 24 hours, swelling begins. By 48 hours, mold can start. By 72 hours, Category 1 water can degrade to Category 2 due to bacterial growth. Speed of response directly determines how much of the structure can be saved.
 
-═══════════════════════════════════════
-💨 EQUIPMENT PERFORMANCE & RECOMMENDATIONS
-═══════════════════════════════════════
-Review GDEP zone by zone. Explain what GDEP is in plain terms (Grains Depression — the difference in moisture between the dehu's exhaust and intake air; measures how hard the dehu is working).
-Flag GDEP below 6 — explain that this means the dehu is barely pulling moisture.
-Flag negative GDEP — explain this means the dehu is making the air WETTER, not drier.
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+ðŸ’¨ EQUIPMENT PERFORMANCE & RECOMMENDATIONS
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+Review GDEP zone by zone. Explain what GDEP is in plain terms (Grains Depression â€” the difference in moisture between the dehu's exhaust and intake air; measures how hard the dehu is working).
+Flag GDEP below 6 â€” explain that this means the dehu is barely pulling moisture.
+Flag negative GDEP â€” explain this means the dehu is making the air WETTER, not drier.
 Give specific equipment recommendations with sizes and placement.
-Training angle: Explain the psychrometric drying triangle — temperature, humidity, and airflow must all be working together. A dehu with low GDEP is a sign that something is wrong: either the equipment is too small, the space is too large, air movers are not pointed correctly, or the dehu is malfunctioning. Explain what happens to a structure when drying is ineffective — moisture stays in walls, mold colonizes in 24–48 hours in warm humid conditions, framing can warp and lose structural integrity.
+Training angle: Explain the psychrometric drying triangle â€” temperature, humidity, and airflow must all be working together. A dehu with low GDEP is a sign that something is wrong: either the equipment is too small, the space is too large, air movers are not pointed correctly, or the dehu is malfunctioning. Explain what happens to a structure when drying is ineffective â€” moisture stays in walls, mold colonizes in 24â€“48 hours in warm humid conditions, framing can warp and lose structural integrity.
 
-═══════════════════════════════════════
-📅 DAILY MONITORING
-═══════════════════════════════════════
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+ðŸ“… DAILY MONITORING
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 Check these three sections separately for gaps:
-1. Atmospheric Readings (outdoor, unaffected zone, drying zone — temp/RH/GPP)
+1. Atmospheric Readings (outdoor, unaffected zone, drying zone â€” temp/RH/GPP)
 2. Dehumidifier Readings (GDEP, hour counter, intake/exhaust temp and RH)
 3. Material Moisture Content Readings (every material, every room, every visit)
 State specific missing dates for each section.
-Training angle: Explain what each reading type tells you and why it cannot be skipped. Atmospheric readings show whether outside conditions are helping or hurting drying. Dehu readings prove the equipment was running and working. Material readings are the only proof that the structure is actually drying — without them, you cannot prove the job succeeded. Explain the S500's psychrometric documentation requirement and why it protects both the customer and SERVPRO.
+Training angle: Explain what each reading type tells you and why it cannot be skipped. Atmospheric readings show whether outside conditions are helping or hurting drying. Dehu readings prove the equipment was running and working. Material readings are the only proof that the structure is actually drying â€” without them, you cannot prove the job succeeded. Explain the S500's psychrometric documentation requirement and why it protects both the customer and SERVPRO.
 
-═══════════════════════════════════════
-📈 READINGS INTEGRITY
-═══════════════════════════════════════
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+ðŸ“ˆ READINGS INTEGRITY
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 Look for patterns that suggest readings may not be accurate:
 - Multiple different materials with identical readings on the same day
 - Unaffected zone readings that never change across days
 - Outside atmospheric readings that are the same on multiple days
 - Material readings that drop in a perfect straight line every day
 - Narrative says "improving" but numbers don't show it
-Training angle: Explain why real drying data is always slightly irregular — outdoor humidity changes, HVAC cycles affect the zone, materials dry at different rates based on density and thickness. Perfectly uniform readings are a red flag. Teach the tech what accurate monitoring looks like vs. what estimated or fabricated data looks like, and why documentation integrity is the foundation of a defensible claim.
+Training angle: Explain why real drying data is always slightly irregular â€” outdoor humidity changes, HVAC cycles affect the zone, materials dry at different rates based on density and thickness. Perfectly uniform readings are a red flag. Teach the tech what accurate monitoring looks like vs. what estimated or fabricated data looks like, and why documentation integrity is the foundation of a defensible claim.
 
-═══════════════════════════════════════
-📞 ADJUSTER & AUTHORIZATION
-═══════════════════════════════════════
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+ðŸ“ž ADJUSTER & AUTHORIZATION
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 Review all diary notes for carrier communication. Is there an introduction call? Written scope authorization? Extended drying authorization for jobs over 7 days?
-Training angle: Explain why adjuster communication is not just paperwork — it is how SERVPRO and the carrier stay aligned on the scope. Unauthorized work, no matter how necessary, is work the carrier has no obligation to pay for. Teach the tech that every conversation with an adjuster should be followed immediately by a diary note: who was called, when, what was said, and what was authorized.
+Training angle: Explain why adjuster communication is not just paperwork â€” it is how SERVPRO and the carrier stay aligned on the scope. Unauthorized work, no matter how necessary, is work the carrier has no obligation to pay for. Teach the tech that every conversation with an adjuster should be followed immediately by a diary note: who was called, when, what was said, and what was authorized.
 
-═══════════════════════════════════════
-🔍 OTHER FINDINGS
-═══════════════════════════════════════
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+ðŸ” OTHER FINDINGS
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 Any issues not covered above: demolition without authorization, asbestos/lead holds without documentation, PPE for Category 2/3, HVAC inconsistencies, equipment exceptions not explained, in-place drying decisions not justified.
 For each: use the four-part format.
 
-═══════════════════════════════════════
-📚 TRAINING TAKEAWAYS FOR THIS TECH
-═══════════════════════════════════════
-Based on the specific issues found in this report, write 3–5 training lessons this technician should carry forward to every future job. Make each lesson practical and memorable — something they can apply on their next call. Connect each lesson to what went wrong in this specific report so the learning is grounded in real experience, not abstract rules.
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+ðŸ“š TRAINING TAKEAWAYS FOR THIS TECH
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+Based on the specific issues found in this report, write 3â€“5 training lessons this technician should carry forward to every future job. Make each lesson practical and memorable â€” something they can apply on their next call. Connect each lesson to what went wrong in this specific report so the learning is grounded in real experience, not abstract rules.
 
-═══════════════════════════════════════
-⚡ PRIORITY ACTION LIST — DO THESE NOW
-═══════════════════════════════════════
-List the top 5 most urgent actions to take RIGHT NOW to protect the revenue on this job. Number 1–5. Be specific: names, dates, dollar amounts if applicable. No vague advice.`;
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+âš¡ PRIORITY ACTION LIST â€” DO THESE NOW
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+List the top 5 most urgent actions to take RIGHT NOW to protect the revenue on this job. Number 1â€“5. Be specific: names, dates, dollar amounts if applicable. No vague advice.`;
 
   try {
     let responseText = '';
@@ -1249,15 +1249,15 @@ List the top 5 most urgent actions to take RIGHT NOW to protect the revenue on t
     if (aiEl) {
       // Format the response: make section headers bold, highlight the four-part labels
       const formatted = escapeHtml(responseText)
-        .replace(/═+/g, '<span style="color:var(--border)">───────────────────────────────────────</span>')
-        .replace(/(📊|📏|⏱️|💨|📅|📈|📞|🔍|📚|⚡)\s+([A-Z &amp;\/]+)/g, '<strong style="font-size:.95rem;color:var(--accent)">$1 $2</strong>')
-        .replace(/📍 WHAT WAS FOUND:/g, '<strong style="color:#f59e0b">📍 WHAT WAS FOUND:</strong>')
-        .replace(/✅ WHAT TO DO:/g, '<strong style="color:#4ade80">✅ WHAT TO DO:</strong>')
-        .replace(/🔬 WHY THIS MATTERS IN RESTORATION:/g, '<strong style="color:#c084fc">🔬 WHY THIS MATTERS IN RESTORATION:</strong>')
-        .replace(/📖 IICRC S500 SAYS:/g, '<strong style="color:#60a5fa">📖 IICRC S500 SAYS:</strong>');
+        .replace(/â•+/g, '<span style="color:var(--border)">â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€</span>')
+        .replace(/(ðŸ“Š|ðŸ“|â±ï¸|ðŸ’¨|ðŸ“…|ðŸ“ˆ|ðŸ“ž|ðŸ”|ðŸ“š|âš¡)\s+([A-Z &amp;\/]+)/g, '<strong style="font-size:.95rem;color:var(--accent)">$1 $2</strong>')
+        .replace(/ðŸ“ WHAT WAS FOUND:/g, '<strong style="color:#f59e0b">ðŸ“ WHAT WAS FOUND:</strong>')
+        .replace(/âœ… WHAT TO DO:/g, '<strong style="color:#4ade80">âœ… WHAT TO DO:</strong>')
+        .replace(/ðŸ”¬ WHY THIS MATTERS IN RESTORATION:/g, '<strong style="color:#c084fc">ðŸ”¬ WHY THIS MATTERS IN RESTORATION:</strong>')
+        .replace(/ðŸ“– IICRC S500 SAYS:/g, '<strong style="color:#60a5fa">ðŸ“– IICRC S500 SAYS:</strong>');
       aiEl.innerHTML = `
-        <h3 style="margin-bottom:4px;">🤖 AI Quality Control &amp; Training Review — ${escapeHtml(report.customerName || 'Report')}</h3>
-        <p style="font-size:.75rem;color:var(--muted);margin-bottom:16px;">Each issue includes: what was found · what to do · why it matters in restoration · what the IICRC S500 says</p>
+        <h3 style="margin-bottom:4px;">ðŸ¤– AI Quality Control &amp; Training Review â€” ${escapeHtml(report.customerName || 'Report')}</h3>
+        <p style="font-size:.75rem;color:var(--muted);margin-bottom:16px;">Each issue includes: what was found Â· what to do Â· why it matters in restoration Â· what the IICRC S500 says</p>
         <div class="ai-content">${formatted}</div>`;
     }
   } catch(err) {
@@ -1265,17 +1265,17 @@ List the top 5 most urgent actions to take RIGHT NOW to protect the revenue on t
     let msg = err.message || 'Unknown error';
     let guidance = '';
     if (msg.includes('Worker URL not set') || msg.includes('not set')) {
-      guidance = `<br><br><strong>Fix it:</strong> Click the <strong>⚙️ Settings</strong> button in the top-right corner. Enter the Worker URL and password from your manager, then click <strong>Test Connection</strong> to confirm it works, then <strong>Save</strong>.`;
+      guidance = `<br><br><strong>Fix it:</strong> Click the <strong>âš™ï¸ Settings</strong> button in the top-right corner. Enter the Worker URL and password from your manager, then click <strong>Test Connection</strong> to confirm it works, then <strong>Save</strong>.`;
     } else if (msg.includes('401') || msg.toLowerCase().includes('password')) {
-      guidance = `<br><br><strong>Fix it:</strong> The password is wrong. Open <strong>⚙️ Settings</strong>, re-enter the password your manager gave you, and click <strong>Test Connection</strong> to verify.`;
+      guidance = `<br><br><strong>Fix it:</strong> The password is wrong. Open <strong>âš™ï¸ Settings</strong>, re-enter the password your manager gave you, and click <strong>Test Connection</strong> to verify.`;
     } else if (msg.includes('Failed to fetch') || msg.includes('NetworkError')) {
-      guidance = `<br><br><strong>Fix it:</strong> Can't reach the Worker URL. Open <strong>⚙️ Settings</strong> and double-check the URL is correct and has no extra spaces.`;
+      guidance = `<br><br><strong>Fix it:</strong> Can't reach the Worker URL. Open <strong>âš™ï¸ Settings</strong> and double-check the URL is correct and has no extra spaces.`;
     } else {
-      guidance = `<br><br>Open <strong>⚙️ Settings</strong>, click <strong>Test Connection</strong>, and check what it shows.`;
+      guidance = `<br><br>Open <strong>âš™ï¸ Settings</strong>, click <strong>Test Connection</strong>, and check what it shows.`;
     }
     if (aiEl) aiEl.innerHTML = `
       <div style="padding:20px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:8px;">
-        <div style="font-weight:700;color:#f87171;margin-bottom:6px;">⚠️ AI Analysis Not Configured</div>
+        <div style="font-weight:700;color:#f87171;margin-bottom:6px;">âš ï¸ AI Analysis Not Configured</div>
         <div style="font-size:.875rem;color:var(--text);line-height:1.6;">${msg}${guidance}</div>
       </div>`;
   }
@@ -1302,7 +1302,7 @@ async function callGemini(prompt, key) {
   if (!key) throw new Error('Gemini API key not set. Open Settings.');
   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,{
     method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ contents:[{ parts:[{ text: prompt }] }], generationConfig:{ maxOutputTokens:4096, temperature:0.3 } })
+    body: JSON.stringify({ contents:[{ parts:[{ text: prompt }] }], generationConfig:{ maxOutputTokens:8192, temperature:0.3 } })
   });
   if (!res.ok) throw new Error(`Gemini error ${res.status}`);
   const d = await res.json();
