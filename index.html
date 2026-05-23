@@ -242,9 +242,11 @@ async function testWorkerConnection() {
     res.textContent = '✗ No URL entered. Paste the Worker URL first.'; return;
   }
   try {
+    const hdrs = { 'Content-Type': 'application/json' };
+    if (pw) hdrs['X-Scrubber-Password'] = pw;
     const r = await fetch(url, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: 'Reply with the single word: connected', password: pw })
+      method: 'POST', headers: hdrs,
+      body: JSON.stringify({ prompt: 'Reply with the single word: connected' })
     });
     if (r.status === 401) {
       res.style.background = 'rgba(239,68,68,.15)'; res.style.color = '#f87171';
@@ -1257,10 +1259,12 @@ If you find any of these patterns, explain what it could mean and how a carrier 
 
 async function callWorker(prompt, s) {
   if (!s.workerUrl) throw new Error('Worker URL not set. Open Settings and enter your Cloudflare Worker URL.');
+  const headers = { 'Content-Type': 'application/json' };
+  if (s.workerPassword) headers['X-Scrubber-Password'] = s.workerPassword;
   const res = await fetch(s.workerUrl, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt, password: s.workerPassword || '' })
+    headers,
+    body: JSON.stringify({ prompt })
   });
   if (!res.ok) {
     const err = await res.text().catch(()=>'');
